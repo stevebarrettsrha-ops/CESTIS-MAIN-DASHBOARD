@@ -840,6 +840,110 @@
             background: rgba(220, 38, 38, 0.8);
             transform: translateY(-1px);
         }
+
+        /* User display in header */
+        .user-display {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-right: 1rem;
+            border-right: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .user-info {
+            text-align: left;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            opacity: 0.85;
+        }
+
+        /* User Settings Styles */
+        .user-setting-item {
+            padding: 1.25rem;
+            background: var(--background);
+            border-radius: 12px;
+            display: grid;
+            grid-template-columns: auto 1fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .user-setting-item.admin-user {
+            border: 2px solid var(--primary);
+        }
+
+        .user-setting-item .item-number {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            align-self: center;
+        }
+
+        .user-setting-item input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .user-setting-item input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .user-setting-item label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .admin-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .user-setting-item {
+                grid-template-columns: 1fr;
+            }
+
+            .user-display {
+                border-right: none;
+                padding-right: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -889,6 +993,13 @@
                 <div class="time" id="currentTime">00:00</div>
                 <div class="date" id="currentDate">Loading...</div>
             </div>
+            <div class="user-display">
+                <div class="user-avatar">👤</div>
+                <div class="user-info">
+                    <div class="user-name" id="loggedInUserName">User</div>
+                    <div class="user-role" id="loggedInUserRole">Role</div>
+                </div>
+            </div>
             <button class="settings-btn" onclick="openSettings()">
                 <span>⚙️</span> Settings
             </button>
@@ -935,6 +1046,7 @@
                     <button class="settings-tab active" onclick="switchTab('general')">General</button>
                     <button class="settings-tab" onclick="switchTab('quickLinks')">Quick Links</button>
                     <button class="settings-tab" onclick="switchTab('mainLinks')">Main Links</button>
+                    <button class="settings-tab" onclick="switchTab('users')">Users</button>
                 </div>
 
                 <!-- General Tab -->
@@ -989,6 +1101,16 @@
                         <span>➕</span> Add Main Link
                     </button>
                 </div>
+
+                <!-- Users Tab -->
+                <div class="tab-content" id="usersTab">
+                    <div class="button-settings-list" id="usersSettings">
+                        <!-- User settings will be populated here -->
+                    </div>
+                    <button class="add-button-btn" onclick="addUser()">
+                        <span>➕</span> Add User
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
@@ -998,11 +1120,19 @@
     </div>
 
     <script>
-        // Authentication credentials
-        const AUTH_CREDENTIALS = {
-            username: 'Cestisadmin',
-            password: 'cestisadmin123$'
-        };
+        // Default admin user
+        const defaultUsers = [
+            {
+                username: 'Cestisadmin',
+                password: 'cestisadmin123$',
+                displayName: 'System Administrator',
+                role: 'Administrator',
+                isAdmin: true
+            }
+        ];
+
+        // Load users from localStorage or use defaults
+        let users = JSON.parse(localStorage.getItem('dashboardUsers')) || defaultUsers;
 
         // Check if user is logged in
         function checkAuth() {
@@ -1013,13 +1143,23 @@
             if (isLoggedIn) {
                 loginPage.classList.add('hidden');
                 dashboardContainer.classList.add('visible');
+                updateUserDisplay();
             } else {
                 loginPage.classList.remove('hidden');
                 dashboardContainer.classList.remove('visible');
             }
         }
 
-        // Handle login form submission
+        // Update user display in header
+        function updateUserDisplay() {
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            if (loggedInUser) {
+                document.getElementById('loggedInUserName').textContent = loggedInUser.displayName;
+                document.getElementById('loggedInUserRole').textContent = loggedInUser.role;
+            }
+        }
+
+        // Handle login form submission (case-insensitive username)
         function handleLogin(event) {
             event.preventDefault();
 
@@ -1027,11 +1167,23 @@
             const password = document.getElementById('password').value;
             const loginError = document.getElementById('loginError');
 
-            if (username === AUTH_CREDENTIALS.username && password === AUTH_CREDENTIALS.password) {
+            // Find user with case-insensitive username match
+            const user = users.find(u =>
+                u.username.toLowerCase() === username.toLowerCase() &&
+                u.password === password
+            );
+
+            if (user) {
                 sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('loggedInUser', JSON.stringify({
+                    username: user.username,
+                    displayName: user.displayName,
+                    role: user.role,
+                    isAdmin: user.isAdmin
+                }));
                 loginError.classList.remove('show');
                 checkAuth();
-                showNotification('Welcome! You have successfully logged in.');
+                showNotification('Welcome, ' + user.displayName + '!');
             } else {
                 loginError.classList.add('show');
                 document.getElementById('loginErrorText').textContent = 'Invalid username or password. Please try again.';
@@ -1041,10 +1193,67 @@
         // Handle logout
         function handleLogout() {
             sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('loggedInUser');
             checkAuth();
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('loginError').classList.remove('show');
+        }
+
+        // User Management Functions
+        function renderUsersSettings() {
+            const container = document.getElementById('usersSettings');
+            container.innerHTML = users.map((user, index) => `
+                <div class="user-setting-item ${user.isAdmin ? 'admin-user' : ''}">
+                    <div class="item-number">${index + 1}</div>
+                    <div>
+                        <label>Username${user.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}</label>
+                        <input type="text" value="${user.username}" onchange="updateUser(${index}, 'username', this.value)" ${user.isAdmin ? 'readonly' : ''}>
+                    </div>
+                    <div>
+                        <label>Display Name</label>
+                        <input type="text" value="${user.displayName}" onchange="updateUser(${index}, 'displayName', this.value)">
+                    </div>
+                    <div>
+                        <label>Password</label>
+                        <input type="password" value="${user.password}" onchange="updateUser(${index}, 'password', this.value)">
+                    </div>
+                    <button class="delete-btn" onclick="deleteUser(${index})" ${user.isAdmin ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function updateUser(index, field, value) {
+            // Prevent changing admin username
+            if (users[index].isAdmin && field === 'username') {
+                return;
+            }
+            users[index][field] = value;
+        }
+
+        function addUser() {
+            users.push({
+                username: 'newuser',
+                password: 'password123',
+                displayName: 'New User',
+                role: 'User',
+                isAdmin: false
+            });
+            renderUsersSettings();
+        }
+
+        function deleteUser(index) {
+            // Cannot delete admin user
+            if (users[index].isAdmin) {
+                alert('Cannot delete the administrator account.');
+                return;
+            }
+            if (users.length > 1) {
+                users.splice(index, 1);
+                renderUsersSettings();
+            } else {
+                alert('You must have at least one user.');
+            }
         }
 
         // Default data
@@ -1156,6 +1365,7 @@
             
             renderQuickLinksSettings();
             renderMainLinksSettings();
+            renderUsersSettings();
         }
 
         function closeSettings() {
@@ -1276,6 +1486,7 @@
             localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
             localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
             localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+            localStorage.setItem('dashboardUsers', JSON.stringify(users));
             
             // Update display
             loadSchoolSettings();
