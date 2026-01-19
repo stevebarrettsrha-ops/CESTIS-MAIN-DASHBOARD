@@ -1983,6 +1983,201 @@
 
             checkAuth();
             showNotification('Welcome, ' + user.displayName + '!');
+
+            // Check if Google Drive is connected and prompt for sync
+            promptSyncOnLogin();
+        }
+
+        // Prompt user to sync from cloud on login
+        function promptSyncOnLogin() {
+            // Check if we have a valid Google Drive token
+            const savedToken = localStorage.getItem('schoolDashboardGoogleAccessToken');
+            const savedExpiry = localStorage.getItem('schoolDashboardGoogleTokenExpiry');
+
+            if (!savedToken || !savedExpiry) {
+                return; // Not connected to Google Drive
+            }
+
+            // Check if token is still valid
+            const expiry = new Date(savedExpiry);
+            if (expiry <= new Date()) {
+                return; // Token expired
+            }
+
+            // Show sync prompt modal after a brief delay to let dashboard load
+            setTimeout(() => {
+                showSyncOnLoginModal();
+            }, 500);
+        }
+
+        // Show sync on login modal
+        function showSyncOnLoginModal() {
+            const existingModal = document.getElementById('syncOnLoginModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const modalHTML = `
+                <div id="syncOnLoginModal" class="google-auth-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 450px;">
+                        <div class="modal-header">
+                            <h2>☁️ Sync from Cloud?</h2>
+                            <button class="close-btn" onclick="closeSyncOnLoginModal(false)">×</button>
+                        </div>
+                        <div style="padding: var(--space-5);">
+                            <div style="text-align: center; margin-bottom: var(--space-5);">
+                                <span style="font-size: 3rem;">🔄</span>
+                            </div>
+
+                            <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
+                                Your Google Drive is connected. Would you like to sync the latest data from the cloud?
+                            </p>
+
+                            <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
+                                <strong style="color: var(--info);">💡 Tip:</strong>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    Syncing ensures you have the latest data saved by other users.
+                                </span>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-3);">
+                                <button class="btn btn-secondary" onclick="closeSyncOnLoginModal(false)" style="flex: 1;">
+                                    Skip
+                                </button>
+                                <button class="btn btn-primary" onclick="closeSyncOnLoginModal(true)" style="flex: 1;">
+                                    🔄 Sync Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        // Close sync on login modal
+        async function closeSyncOnLoginModal(shouldSync) {
+            const modal = document.getElementById('syncOnLoginModal');
+            if (modal) {
+                modal.remove();
+            }
+
+            if (shouldSync) {
+                await performAutoSyncOnLogin();
+            }
+        }
+
+        // Perform automatic sync on login
+        async function performAutoSyncOnLogin() {
+            // Initialize token if not already done
+            const savedToken = localStorage.getItem('schoolDashboardGoogleAccessToken');
+            if (savedToken) {
+                googleAccessToken = savedToken;
+                isCloudConnected = true;
+            }
+
+            if (!isCloudConnected || !googleAccessToken) {
+                showNotification('Could not connect to Google Drive', 'error');
+                return;
+            }
+
+            setCloudSyncing(true);
+            updateCloudUI(true);
+
+            try {
+                // First try to find the backup file
+                if (!cloudFileId) {
+                    const savedFileId = localStorage.getItem('schoolDashboardCloudFileId');
+                    if (savedFileId) {
+                        cloudFileId = savedFileId;
+                    } else {
+                        await findExistingBackupFile();
+                    }
+                }
+
+                if (!cloudFileId) {
+                    setCloudSyncing(false);
+                    showNotification('No backup file found in cloud', 'warning');
+                    return;
+                }
+
+                // Download the file
+                const response = await fetch(
+                    `https://www.googleapis.com/drive/v3/files/${cloudFileId}?alt=media`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${googleAccessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to download backup');
+                }
+
+                const backupData = await response.json();
+
+                // Validate backup format
+                if (!backupData.data || !backupData.version) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                // Restore all data
+                if (backupData.data.users) {
+                    users = backupData.data.users;
+                    saveUsers();
+                }
+
+                if (backupData.data.quickLinks) {
+                    quickLinks = backupData.data.quickLinks;
+                    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+                }
+
+                if (backupData.data.mainLinks) {
+                    mainLinks = backupData.data.mainLinks;
+                    localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
+                }
+
+                if (backupData.data.schoolSettings) {
+                    schoolSettings = backupData.data.schoolSettings;
+                    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+                }
+
+                // Update sync tracking
+                lastSyncTime = new Date();
+                localStorage.setItem('schoolDashboardLastSyncTime', lastSyncTime.toISOString());
+                updateLastSyncDisplay();
+
+                // Update last saved by info
+                lastSavedBy = backupData.savedBy || 'Unknown';
+                cloudFileTimestamp = backupData.timestamp;
+                updateLastSavedByDisplay();
+
+                // Refresh UI
+                loadSchoolSettings();
+                renderQuickLinks();
+                renderMainLinks();
+
+                setCloudSyncing(false);
+
+                const savedByInfo = backupData.savedBy ? ` (saved by ${backupData.savedBy})` : '';
+                showNotification(`Synced from cloud${savedByInfo}`, 'success');
+
+            } catch (error) {
+                console.error('Error syncing on login:', error);
+                setCloudSyncing(false);
+
+                if (error.message.includes('invalid_token') || error.message.includes('Invalid Credentials')) {
+                    showNotification('Google Drive session expired', 'error');
+                    // Clear invalid token
+                    localStorage.removeItem('schoolDashboardGoogleAccessToken');
+                    localStorage.removeItem('schoolDashboardGoogleTokenExpiry');
+                    updateCloudUI(false);
+                } else {
+                    showNotification(`Sync failed: ${error.message}`, 'error');
+                }
+            }
         }
 
         // Show login error message
@@ -2363,13 +2558,24 @@
             showNotification('Settings saved successfully!');
         }
 
-        function showNotification(message) {
+        function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
+
+            // Define colors and icons for different types
+            const typeConfig = {
+                success: { bg: '#10b981', icon: '✅' },
+                error: { bg: '#ef4444', icon: '❌' },
+                warning: { bg: '#f59e0b', icon: '⚠️' },
+                info: { bg: '#3b82f6', icon: 'ℹ️' }
+            };
+
+            const config = typeConfig[type] || typeConfig.success;
+
             notification.style.cssText = `
                 position: fixed;
                 bottom: 2rem;
                 right: 2rem;
-                background: #10b981;
+                background: ${config.bg};
                 color: white;
                 padding: 1rem 1.5rem;
                 border-radius: 8px;
@@ -2378,9 +2584,9 @@
                 z-index: 2000;
                 animation: slideIn 0.3s ease;
             `;
-            notification.textContent = '✅ ' + message;
+            notification.textContent = config.icon + ' ' + message;
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 notification.style.animation = 'slideOut 0.3s ease';
                 setTimeout(() => notification.remove(), 300);
