@@ -80,6 +80,9 @@
             --gray-100: #f3f4f6;
             --gray-500: #6b7280;
 
+            /* Background variants */
+            --bg-hover: rgba(0, 0, 0, 0.04);
+
             /* Fonts */
             --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
         }
@@ -1632,6 +1635,10 @@
                                 <span>🔄</span>
                                 <span>Sync from Cloud</span>
                             </div>
+                            <div class="cloud-dropdown-item" onclick="browseBackupFiles()">
+                                <span>📁</span>
+                                <span>Browse All Backups</span>
+                            </div>
                             <div class="cloud-dropdown-divider"></div>
                             <div class="last-sync-info" id="lastSyncInfo">
                                 Last sync: Never
@@ -2805,8 +2812,8 @@
             FOLDER_ID: '11vWe_Nc40TtJ1Hi7PoE7EZ3JrpR-K0Vj',
             // File name for backup
             BACKUP_FILE_NAME: 'CESTIS_MAIN_DASHBOARD_BACKUP.json',
-            // API scopes needed
-            SCOPES: 'https://www.googleapis.com/auth/drive.file'
+            // API scopes needed - using 'drive' scope to allow access to shared files from any account
+            SCOPES: 'https://www.googleapis.com/auth/drive'
         };
 
         // Cloud sync state
@@ -2976,7 +2983,7 @@
                                         <strong style="color: var(--info);">How to get your access token:</strong>
                                         <ol style="margin-top: var(--space-2); margin-left: var(--space-4); color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6;">
                                             <li>Click the link below to open Google OAuth Playground</li>
-                                            <li>In Step 1, find and select <strong>"Drive API v3"</strong> → check <strong>"drive.file"</strong></li>
+                                            <li>In Step 1, find and select <strong>"Drive API v3"</strong> → check <strong>"../auth/drive"</strong> (full access to shared files)</li>
                                             <li>Click <strong>"Authorize APIs"</strong> (blue button)</li>
                                             <li>Sign in with your Google account</li>
                                             <li>In Step 2, click <strong>"Exchange authorization code for tokens"</strong></li>
@@ -3465,6 +3472,465 @@
             if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
             if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
             return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        }
+
+        // ============================================
+        // FILE BROWSER & SELECTIVE SYNC FUNCTIONALITY
+        // ============================================
+
+        // Browse all backup files in the shared folder
+        async function browseBackupFiles() {
+            if (!isCloudConnected || !googleAccessToken) {
+                alert('Please connect to Google Drive first');
+                return;
+            }
+
+            const menu = document.getElementById('cloudDropdownMenu');
+            menu.classList.remove('show');
+
+            setCloudSyncing(true);
+
+            try {
+                const files = await listBackupFilesInFolder();
+                setCloudSyncing(false);
+
+                if (files.length === 0) {
+                    alert('📁 No backup files found in the shared folder.\n\nMake sure the folder is shared with your account and contains JSON backup files.');
+                    return;
+                }
+
+                showFileBrowserModal(files);
+            } catch (error) {
+                console.error('Error browsing backup files:', error);
+                setCloudSyncing(false);
+
+                if (error.message.includes('invalid_token') || error.message.includes('Invalid Credentials')) {
+                    alert('❌ Your session has expired. Please reconnect to Google Drive.');
+                    disconnectFromGoogleDrive();
+                } else {
+                    alert(`❌ Failed to browse files: ${error.message}`);
+                }
+            }
+        }
+
+        // List all JSON backup files in the shared folder
+        async function listBackupFilesInFolder() {
+            // Search for all JSON files in the shared folder
+            const query = `'${GOOGLE_DRIVE_CONFIG.FOLDER_ID}' in parents and mimeType='application/json' and trashed=false`;
+
+            const response = await fetch(
+                `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,modifiedTime,size,owners,sharingUser)&orderBy=modifiedTime desc`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${googleAccessToken}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Failed to list files');
+            }
+
+            const data = await response.json();
+
+            // For each file, try to get additional metadata (savedBy info)
+            const filesWithMetadata = await Promise.all(
+                data.files.map(async (file) => {
+                    try {
+                        const contentResponse = await fetch(
+                            `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${googleAccessToken}`
+                                }
+                            }
+                        );
+
+                        if (contentResponse.ok) {
+                            const content = await contentResponse.json();
+                            return {
+                                ...file,
+                                savedBy: content.savedBy || 'Unknown',
+                                backupTimestamp: content.timestamp,
+                                hasValidFormat: content.version && content.data
+                            };
+                        }
+                    } catch (e) {
+                        console.warn('Could not read metadata for file:', file.name);
+                    }
+
+                    return {
+                        ...file,
+                        savedBy: 'Unknown',
+                        backupTimestamp: file.modifiedTime,
+                        hasValidFormat: false
+                    };
+                })
+            );
+
+            return filesWithMetadata;
+        }
+
+        // Show file browser modal
+        function showFileBrowserModal(files) {
+            const existingModal = document.getElementById('fileBrowserModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const fileListHTML = files.map(file => {
+                const modifiedDate = new Date(file.modifiedTime);
+                const timeAgo = getTimeAgo(modifiedDate);
+                const dateFormatted = modifiedDate.toLocaleDateString() + ' ' + modifiedDate.toLocaleTimeString();
+                const validBadge = file.hasValidFormat
+                    ? '<span style="background: var(--success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">Valid</span>'
+                    : '<span style="background: var(--warning); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">Unknown Format</span>';
+
+                return `
+                    <div class="backup-file-item" onclick="selectBackupFile('${file.id}', '${file.name.replace(/'/g, "\\'")}')">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 1.5rem;">📄</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary);">
+                                    ${file.name}${validBadge}
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+                                    <span>📅 ${dateFormatted}</span>
+                                    <span style="margin-left: 16px;">👤 Saved by: ${file.savedBy}</span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                                    Modified ${timeAgo}
+                                </div>
+                            </div>
+                            <span style="color: var(--accent); font-size: 1.2rem;">→</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const modalHTML = `
+                <div id="fileBrowserModal" class="google-auth-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 700px; max-height: 80vh;">
+                        <div class="modal-header">
+                            <h2>📁 Browse Backup Files</h2>
+                            <button class="close-btn" onclick="closeFileBrowserModal()">×</button>
+                        </div>
+                        <div style="padding: var(--space-4);">
+                            <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                                Select a backup file to sync from. Files are sorted by most recent first.
+                            </p>
+                            <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-4);">
+                                <strong style="color: var(--info);">💡 Tip:</strong>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    Files shared with your account from other users will appear here. You can sync data from any shared backup.
+                                </span>
+                            </div>
+                            <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+                                ${fileListHTML}
+                            </div>
+                            <div style="margin-top: var(--space-4); text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+                                Found ${files.length} backup file${files.length !== 1 ? 's' : ''} in shared folder
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    .backup-file-item {
+                        padding: var(--space-4);
+                        border-bottom: 1px solid var(--border-light);
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    }
+                    .backup-file-item:hover {
+                        background-color: var(--bg-hover);
+                    }
+                    .backup-file-item:last-child {
+                        border-bottom: none;
+                    }
+                </style>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        // Close file browser modal
+        function closeFileBrowserModal() {
+            const modal = document.getElementById('fileBrowserModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Select a backup file and show selective sync options
+        async function selectBackupFile(fileId, fileName) {
+            closeFileBrowserModal();
+            setCloudSyncing(true);
+
+            try {
+                // Download the file content
+                const response = await fetch(
+                    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${googleAccessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to download backup file');
+                }
+
+                const backupData = await response.json();
+                setCloudSyncing(false);
+
+                // Validate backup format
+                if (!backupData.data || !backupData.version) {
+                    alert('❌ Invalid backup file format. This file does not contain valid dashboard backup data.');
+                    return;
+                }
+
+                // Show selective sync modal
+                showSelectiveSyncModal(backupData, fileId, fileName);
+
+            } catch (error) {
+                console.error('Error loading backup file:', error);
+                setCloudSyncing(false);
+                alert(`❌ Failed to load backup file: ${error.message}`);
+            }
+        }
+
+        // Show selective sync modal
+        function showSelectiveSyncModal(backupData, fileId, fileName) {
+            const existingModal = document.getElementById('selectiveSyncModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            const backupTime = new Date(backupData.timestamp).toLocaleString();
+            const savedBy = backupData.savedBy || 'Unknown';
+
+            // Count items in each category
+            const userCount = backupData.data.users ? backupData.data.users.length : 0;
+            const quickLinksCount = backupData.data.quickLinks ? backupData.data.quickLinks.length : 0;
+            const mainLinksCount = backupData.data.mainLinks ? backupData.data.mainLinks.length : 0;
+            const hasSettings = backupData.data.schoolSettings ? true : false;
+
+            const modalHTML = `
+                <div id="selectiveSyncModal" class="google-auth-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 550px;">
+                        <div class="modal-header">
+                            <h2>🔄 Selective Sync</h2>
+                            <button class="close-btn" onclick="closeSelectiveSyncModal()">×</button>
+                        </div>
+                        <div style="padding: var(--space-5);">
+                            <div style="background: var(--bg-secondary); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-5);">
+                                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-2);">
+                                    📄 ${fileName}
+                                </div>
+                                <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                                    <span>📅 ${backupTime}</span>
+                                    <span style="margin-left: 16px;">👤 Saved by: ${savedBy}</span>
+                                </div>
+                            </div>
+
+                            <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                                Choose which data you want to sync from this backup:
+                            </p>
+
+                            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <label class="sync-option-item" style="${userCount === 0 ? 'opacity: 0.5;' : ''}">
+                                    <input type="checkbox" id="syncUsers" ${userCount > 0 ? 'checked' : 'disabled'}>
+                                    <span class="sync-option-label">
+                                        <span style="font-size: 1.2rem;">👥</span>
+                                        <span>
+                                            <strong>Users</strong>
+                                            <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 8px;">(${userCount} user${userCount !== 1 ? 's' : ''})</span>
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <label class="sync-option-item" style="${quickLinksCount === 0 ? 'opacity: 0.5;' : ''}">
+                                    <input type="checkbox" id="syncQuickLinks" ${quickLinksCount > 0 ? 'checked' : 'disabled'}>
+                                    <span class="sync-option-label">
+                                        <span style="font-size: 1.2rem;">⚡</span>
+                                        <span>
+                                            <strong>Quick Links</strong>
+                                            <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 8px;">(${quickLinksCount} link${quickLinksCount !== 1 ? 's' : ''})</span>
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <label class="sync-option-item" style="${mainLinksCount === 0 ? 'opacity: 0.5;' : ''}">
+                                    <input type="checkbox" id="syncMainLinks" ${mainLinksCount > 0 ? 'checked' : 'disabled'}>
+                                    <span class="sync-option-label">
+                                        <span style="font-size: 1.2rem;">🔗</span>
+                                        <span>
+                                            <strong>Main Links</strong>
+                                            <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 8px;">(${mainLinksCount} link${mainLinksCount !== 1 ? 's' : ''})</span>
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <label class="sync-option-item" style="${!hasSettings ? 'opacity: 0.5;' : ''}">
+                                    <input type="checkbox" id="syncSettings" ${hasSettings ? 'checked' : 'disabled'}>
+                                    <span class="sync-option-label">
+                                        <span style="font-size: 1.2rem;">⚙️</span>
+                                        <span>
+                                            <strong>School Settings</strong>
+                                            <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 8px;">(name, logo, theme)</span>
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div style="background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-5); margin-bottom: var(--space-4);">
+                                <strong style="color: var(--warning);">⚠️ Warning:</strong>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    Selected data will <strong>replace</strong> your current local data.
+                                </span>
+                            </div>
+
+                            <div style="display: flex; gap: var(--space-3);">
+                                <button class="btn btn-secondary" onclick="closeSelectiveSyncModal()" style="flex: 1;">
+                                    Cancel
+                                </button>
+                                <button class="btn btn-success" onclick="performSelectiveSync('${fileId}')" style="flex: 1;">
+                                    🔄 Sync Selected Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    .sync-option-item {
+                        display: flex;
+                        align-items: center;
+                        gap: var(--space-3);
+                        padding: var(--space-3);
+                        background: var(--bg-secondary);
+                        border: 1px solid var(--border-light);
+                        border-radius: var(--radius-md);
+                        cursor: pointer;
+                        transition: all 0.2s;
+                    }
+                    .sync-option-item:hover {
+                        border-color: var(--accent);
+                        background: var(--bg-hover);
+                    }
+                    .sync-option-item input[type="checkbox"] {
+                        width: 20px;
+                        height: 20px;
+                        accent-color: var(--accent);
+                    }
+                    .sync-option-label {
+                        display: flex;
+                        align-items: center;
+                        gap: var(--space-2);
+                    }
+                </style>
+            `;
+
+            // Store backup data for later use
+            window.pendingBackupData = backupData;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        // Close selective sync modal
+        function closeSelectiveSyncModal() {
+            const modal = document.getElementById('selectiveSyncModal');
+            if (modal) {
+                modal.remove();
+            }
+            window.pendingBackupData = null;
+        }
+
+        // Perform selective sync based on user selections
+        async function performSelectiveSync(fileId) {
+            const backupData = window.pendingBackupData;
+            if (!backupData) {
+                alert('❌ Backup data not found. Please try again.');
+                closeSelectiveSyncModal();
+                return;
+            }
+
+            const syncUsers = document.getElementById('syncUsers').checked;
+            const syncQuickLinks = document.getElementById('syncQuickLinks').checked;
+            const syncMainLinks = document.getElementById('syncMainLinks').checked;
+            const syncSettings = document.getElementById('syncSettings').checked;
+
+            if (!syncUsers && !syncQuickLinks && !syncMainLinks && !syncSettings) {
+                alert('Please select at least one data type to sync.');
+                return;
+            }
+
+            // Build confirmation message
+            let selectedItems = [];
+            if (syncUsers) selectedItems.push('Users');
+            if (syncQuickLinks) selectedItems.push('Quick Links');
+            if (syncMainLinks) selectedItems.push('Main Links');
+            if (syncSettings) selectedItems.push('School Settings');
+
+            if (!confirm(`⚠️ You are about to sync the following data:\n\n• ${selectedItems.join('\n• ')}\n\nThis will replace your current local data. Continue?`)) {
+                return;
+            }
+
+            closeSelectiveSyncModal();
+            setCloudSyncing(true);
+
+            try {
+                // Perform selective restore
+                if (syncUsers && backupData.data.users) {
+                    users = backupData.data.users;
+                    saveUsers();
+                }
+
+                if (syncQuickLinks && backupData.data.quickLinks) {
+                    quickLinks = backupData.data.quickLinks;
+                    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+                }
+
+                if (syncMainLinks && backupData.data.mainLinks) {
+                    mainLinks = backupData.data.mainLinks;
+                    localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
+                }
+
+                if (syncSettings && backupData.data.schoolSettings) {
+                    schoolSettings = backupData.data.schoolSettings;
+                    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+                }
+
+                // Update sync tracking
+                lastSyncTime = new Date();
+                localStorage.setItem('schoolDashboardLastSyncTime', lastSyncTime.toISOString());
+                updateLastSyncDisplay();
+
+                // Update last saved by info
+                lastSavedBy = backupData.savedBy || 'Unknown';
+                cloudFileTimestamp = backupData.timestamp;
+                updateLastSavedByDisplay();
+
+                // Cache the file ID if this becomes our primary sync file
+                cloudFileId = fileId;
+                localStorage.setItem('schoolDashboardCloudFileId', cloudFileId);
+
+                // Refresh UI
+                loadSchoolSettings();
+                renderQuickLinks();
+                renderMainLinks();
+
+                setCloudSyncing(false);
+
+                const syncedItems = selectedItems.join(', ');
+                alert(`✅ Selective sync completed!\n\nSynced: ${syncedItems}\n\nFrom backup saved by: ${lastSavedBy}`);
+
+            } catch (error) {
+                console.error('Error performing selective sync:', error);
+                setCloudSyncing(false);
+                alert(`❌ Failed to sync data: ${error.message}`);
+            }
         }
     </script>
 </body>
