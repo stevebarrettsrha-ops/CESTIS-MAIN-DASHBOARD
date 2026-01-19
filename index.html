@@ -678,9 +678,201 @@
         .icon {
             font-style: normal;
         }
+
+        /* Login Page Styles */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 1rem;
+        }
+
+        .login-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+        }
+
+        .login-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .login-form-group {
+            position: relative;
+        }
+
+        .login-form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .login-form-group input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            padding-left: 2.75rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: var(--background);
+        }
+
+        .login-form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .login-form-group .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.5rem;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .login-error.show {
+            display: flex;
+        }
+
+        .dashboard-container {
+            display: none;
+        }
+
+        .dashboard-container.visible {
+            display: block;
+        }
+
+        .login-page.hidden {
+            display: none;
+        }
+
+        /* Logout button */
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 38, 38, 0.8);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
+    <!-- Login Page -->
+    <div class="login-page" id="loginPage">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="login-logo">🏫</div>
+                <h1>School Dashboard</h1>
+                <p>Sign in to access the dashboard</p>
+            </div>
+            <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="login-error" id="loginError">
+                    <span>⚠️</span>
+                    <span id="loginErrorText">Invalid username or password</span>
+                </div>
+                <div class="login-form-group">
+                    <label for="username">Username</label>
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username">
+                </div>
+                <div class="login-form-group">
+                    <label for="password">Password</label>
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container" id="dashboardContainer">
     <!-- Header -->
     <header class="header">
         <div class="header-left">
@@ -699,6 +891,9 @@
             </div>
             <button class="settings-btn" onclick="openSettings()">
                 <span>⚙️</span> Settings
+            </button>
+            <button class="logout-btn" onclick="handleLogout()">
+                <span>🚪</span> Logout
             </button>
         </div>
     </header>
@@ -726,6 +921,7 @@
     <footer class="footer">
         <p>© <span id="year"></span> School Dashboard. All rights reserved.</p>
     </footer>
+    </div><!-- End Dashboard Container -->
 
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settingsModal">
@@ -802,6 +998,55 @@
     </div>
 
     <script>
+        // Authentication credentials
+        const AUTH_CREDENTIALS = {
+            username: 'Cestisadmin',
+            password: 'cestisadmin123$'
+        };
+
+        // Check if user is logged in
+        function checkAuth() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const loginPage = document.getElementById('loginPage');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+
+            if (isLoggedIn) {
+                loginPage.classList.add('hidden');
+                dashboardContainer.classList.add('visible');
+            } else {
+                loginPage.classList.remove('hidden');
+                dashboardContainer.classList.remove('visible');
+            }
+        }
+
+        // Handle login form submission
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginError = document.getElementById('loginError');
+
+            if (username === AUTH_CREDENTIALS.username && password === AUTH_CREDENTIALS.password) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                loginError.classList.remove('show');
+                checkAuth();
+                showNotification('Welcome! You have successfully logged in.');
+            } else {
+                loginError.classList.add('show');
+                document.getElementById('loginErrorText').textContent = 'Invalid username or password. Please try again.';
+            }
+        }
+
+        // Handle logout
+        function handleLogout() {
+            sessionStorage.removeItem('isLoggedIn');
+            checkAuth();
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginError').classList.remove('show');
+        }
+
         // Default data
         const defaultQuickLinks = [
             { name: 'Student Portal', url: '#', icon: '👨‍🎓' },
@@ -838,6 +1083,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
             renderQuickLinks();
             renderMainLinks();
             loadSchoolSettings();
