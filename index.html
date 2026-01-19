@@ -881,7 +881,7 @@
             background: var(--background);
             border-radius: 12px;
             display: grid;
-            grid-template-columns: auto 1fr 1fr 1fr auto;
+            grid-template-columns: auto 1fr 1fr 1fr 1fr auto;
             gap: 1rem;
             align-items: end;
         }
@@ -903,15 +903,18 @@
             align-self: center;
         }
 
-        .user-setting-item input {
+        .user-setting-item input,
+        .user-setting-item select {
             width: 100%;
             padding: 0.75rem 1rem;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 0.9rem;
+            background: white;
         }
 
-        .user-setting-item input:focus {
+        .user-setting-item input:focus,
+        .user-setting-item select:focus {
             outline: none;
             border-color: var(--primary);
         }
@@ -932,6 +935,11 @@
             font-size: 0.7rem;
             font-weight: 600;
             margin-left: 0.5rem;
+        }
+
+        /* Hide settings button for non-admins */
+        .settings-btn.hidden {
+            display: none;
         }
 
         @media (max-width: 768px) {
@@ -1139,11 +1147,20 @@
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
             const loginPage = document.getElementById('loginPage');
             const dashboardContainer = document.getElementById('dashboardContainer');
+            const settingsBtn = document.querySelector('.settings-btn');
 
             if (isLoggedIn) {
                 loginPage.classList.add('hidden');
                 dashboardContainer.classList.add('visible');
                 updateUserDisplay();
+
+                // Show/hide settings based on user role
+                const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+                if (loggedInUser && loggedInUser.role === 'Administrator') {
+                    settingsBtn.classList.remove('hidden');
+                } else {
+                    settingsBtn.classList.add('hidden');
+                }
             } else {
                 loginPage.classList.remove('hidden');
                 dashboardContainer.classList.remove('visible');
@@ -1217,6 +1234,13 @@
                     <div>
                         <label>Password</label>
                         <input type="${user.isAdmin ? 'text' : 'password'}" value="${user.isAdmin ? '••••••••••••' : user.password}" onchange="updateUser(${index}, 'password', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                    </div>
+                    <div>
+                        <label>Role</label>
+                        <select onchange="updateUser(${index}, 'role', this.value)" ${user.isAdmin ? 'disabled style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                            <option value="User" ${user.role === 'User' ? 'selected' : ''}>User (View Only)</option>
+                            <option value="Administrator" ${user.role === 'Administrator' ? 'selected' : ''}>Administrator (Full Access)</option>
+                        </select>
                     </div>
                     <button class="delete-btn" onclick="deleteUser(${index})" ${user.isAdmin ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>🗑️</button>
                 </div>
