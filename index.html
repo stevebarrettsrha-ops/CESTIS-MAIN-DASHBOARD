@@ -2150,26 +2150,36 @@
         // Render Quick Links
         function renderQuickLinks() {
             const grid = document.getElementById('quickLinksGrid');
-            grid.innerHTML = quickLinks.map((link, index) => `
-                <a href="${link.url}" class="quick-link-card" target="_blank">
+            grid.innerHTML = quickLinks.map((link, index) => {
+                const hasValidUrl = link.url && link.url !== '#' && link.url.trim() !== '';
+                const href = hasValidUrl ? link.url : 'javascript:void(0)';
+                const target = hasValidUrl ? 'target="_blank"' : '';
+                return `
+                <a href="${href}" class="quick-link-card" ${target}>
                     <div class="quick-link-icon">${link.icon || '🔗'}</div>
                     <div class="quick-link-title">${link.name}</div>
                 </a>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Render Main Links
         function renderMainLinks() {
             const grid = document.getElementById('mainLinksGrid');
-            grid.innerHTML = mainLinks.map((link, index) => `
-                <a href="${link.url}" class="main-link-card" target="_blank">
+            grid.innerHTML = mainLinks.map((link, index) => {
+                const hasValidUrl = link.url && link.url !== '#' && link.url.trim() !== '';
+                const href = hasValidUrl ? link.url : 'javascript:void(0)';
+                const target = hasValidUrl ? 'target="_blank"' : '';
+                return `
+                <a href="${href}" class="main-link-card" ${target}>
                     <div class="main-link-icon">${link.icon || '🔗'}</div>
                     <div class="main-link-content">
                         <h3>${link.name}</h3>
                         <p>${link.description || 'Click to open'}</p>
                     </div>
                 </a>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Load School Settings
