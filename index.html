@@ -3384,7 +3384,209 @@
             // Try to find existing backup file
             await findExistingBackupFile();
 
-            alert('✅ Connected to Google Drive successfully! You can now save and sync your data.');
+            // Show forced sync modal after successful connection
+            showForcedSyncAfterConnectModal();
+        }
+
+        // Show forced sync modal after successful Google Drive connection
+        function showForcedSyncAfterConnectModal() {
+            const existingModal = document.getElementById('forcedSyncModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Check if there's an existing backup to sync from
+            const hasBackup = cloudFileId !== null;
+
+            const modalHTML = `
+                <div id="forcedSyncModal" class="google-auth-modal" style="display: flex;">
+                    <div class="modal-content" style="max-width: 450px;">
+                        <div class="modal-header">
+                            <h2>✅ Connected to Google Drive!</h2>
+                        </div>
+                        <div style="padding: var(--space-5);">
+                            <div style="text-align: center; margin-bottom: var(--space-5);">
+                                <span style="font-size: 3rem;">🔄</span>
+                            </div>
+
+                            ${hasBackup ? `
+                                <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
+                                    A cloud backup was found. You must sync your data before continuing to ensure you have the latest information.
+                                </p>
+
+                                <div style="background: var(--warning-bg); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
+                                    <strong style="color: var(--warning);">⚠️ Important:</strong>
+                                    <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                                        This will replace your local data with the cloud backup.
+                                    </span>
+                                </div>
+
+                                <button class="btn btn-primary" onclick="performForcedSyncAfterConnect()" style="width: 100%;">
+                                    🔄 Sync Now
+                                </button>
+                            ` : `
+                                <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
+                                    No existing backup was found in the cloud. Would you like to save your current data to the cloud now?
+                                </p>
+
+                                <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
+                                    <strong style="color: var(--info);">💡 Tip:</strong>
+                                    <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                                        Saving now will create a backup that other users can sync from.
+                                    </span>
+                                </div>
+
+                                <div style="display: flex; gap: var(--space-3);">
+                                    <button class="btn btn-secondary" onclick="closeForcedSyncModal(false)" style="flex: 1;">
+                                        Skip for Now
+                                    </button>
+                                    <button class="btn btn-primary" onclick="performForcedSaveAfterConnect()" style="flex: 1;">
+                                        💾 Save to Cloud
+                                    </button>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        // Perform forced sync after connection
+        async function performForcedSyncAfterConnect() {
+            const modal = document.getElementById('forcedSyncModal');
+
+            // Update modal to show syncing status
+            if (modal) {
+                const content = modal.querySelector('.modal-content > div:last-child');
+                content.innerHTML = `
+                    <div style="text-align: center; padding: var(--space-5);">
+                        <div class="spinning" style="font-size: 3rem; margin-bottom: var(--space-4);">🔄</div>
+                        <p style="color: var(--text-secondary);">Syncing data from cloud...</p>
+                    </div>
+                `;
+            }
+
+            setCloudSyncing(true);
+
+            try {
+                // Download the file
+                const response = await fetch(
+                    `https://www.googleapis.com/drive/v3/files/${cloudFileId}?alt=media`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${googleAccessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to download backup');
+                }
+
+                const backupData = await response.json();
+
+                // Validate backup format
+                if (!backupData.data || !backupData.version) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                // Restore data
+                if (backupData.data.users) {
+                    users = backupData.data.users;
+                    saveUsers();
+                }
+
+                if (backupData.data.quickLinks) {
+                    quickLinks = backupData.data.quickLinks;
+                    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+                }
+
+                if (backupData.data.mainLinks) {
+                    mainLinks = backupData.data.mainLinks;
+                    localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
+                }
+
+                if (backupData.data.schoolSettings) {
+                    schoolSettings = backupData.data.schoolSettings;
+                    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+                }
+
+                // Update sync tracking
+                lastSyncTime = new Date();
+                localStorage.setItem('schoolDashboardLastSyncTime', lastSyncTime.toISOString());
+                updateLastSyncDisplay();
+
+                // Update last saved by info
+                lastSavedBy = backupData.savedBy || 'Unknown';
+                cloudFileTimestamp = backupData.timestamp;
+                updateLastSavedByDisplay();
+
+                // Refresh UI
+                loadSchoolSettings();
+                renderQuickLinks();
+                renderMainLinks();
+
+                setCloudSyncing(false);
+                closeForcedSyncModal(true);
+
+                const savedByInfo = backupData.savedBy ? ` (saved by ${backupData.savedBy})` : '';
+                showNotification(`Connected and synced from cloud${savedByInfo}`, 'success');
+
+            } catch (error) {
+                console.error('Error during forced sync:', error);
+                setCloudSyncing(false);
+
+                // Update modal to show error with retry option
+                if (modal) {
+                    const content = modal.querySelector('.modal-content > div:last-child');
+                    content.innerHTML = `
+                        <div style="text-align: center; margin-bottom: var(--space-5);">
+                            <span style="font-size: 3rem;">❌</span>
+                        </div>
+                        <p style="text-align: center; color: var(--danger); margin-bottom: var(--space-5);">
+                            Sync failed: ${error.message}
+                        </p>
+                        <div style="display: flex; gap: var(--space-3);">
+                            <button class="btn btn-secondary" onclick="closeForcedSyncModal(false)" style="flex: 1;">
+                                Continue Anyway
+                            </button>
+                            <button class="btn btn-primary" onclick="performForcedSyncAfterConnect()" style="flex: 1;">
+                                🔄 Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Perform save to cloud after connection (when no backup exists)
+        async function performForcedSaveAfterConnect() {
+            const modal = document.getElementById('forcedSyncModal');
+
+            // Update modal to show saving status
+            if (modal) {
+                const content = modal.querySelector('.modal-content > div:last-child');
+                content.innerHTML = `
+                    <div style="text-align: center; padding: var(--space-5);">
+                        <div class="spinning" style="font-size: 3rem; margin-bottom: var(--space-4);">💾</div>
+                        <p style="color: var(--text-secondary);">Saving data to cloud...</p>
+                    </div>
+                `;
+            }
+
+            // Close modal and trigger save
+            closeForcedSyncModal(false);
+            await saveToCloud();
+        }
+
+        // Close forced sync modal
+        function closeForcedSyncModal(syncSuccessful) {
+            const modal = document.getElementById('forcedSyncModal');
+            if (modal) {
+                modal.remove();
+            }
         }
 
         function handleGoogleAuthError(error) {
