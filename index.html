@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --background: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-container {
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .logo-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-placeholder {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .school-info h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .school-info p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .datetime {
+            text-align: right;
+            padding-right: 1rem;
+            border-right: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .datetime .time {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .datetime .date {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .settings-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Quick Links Grid */
+        .quick-links-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .quick-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .quick-link-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border: 2px solid transparent;
+            min-height: 140px;
+            justify-content: center;
+        }
+
+        .quick-link-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .quick-link-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .quick-link-card:nth-child(6n+1) .quick-link-icon { background: #dbeafe; color: #2563eb; }
+        .quick-link-card:nth-child(6n+2) .quick-link-icon { background: #dcfce7; color: #16a34a; }
+        .quick-link-card:nth-child(6n+3) .quick-link-icon { background: #fef3c7; color: #d97706; }
+        .quick-link-card:nth-child(6n+4) .quick-link-icon { background: #fce7f3; color: #db2777; }
+        .quick-link-card:nth-child(6n+5) .quick-link-icon { background: #e0e7ff; color: #4f46e5; }
+        .quick-link-card:nth-child(6n+6) .quick-link-icon { background: #ccfbf1; color: #0d9488; }
+
+        .quick-link-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
+
+        /* Main Links Section */
+        .main-links-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .main-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .main-link-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .main-link-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .main-link-card:nth-child(4n+1) { border-left-color: #2563eb; }
+        .main-link-card:nth-child(4n+2) { border-left-color: #10b981; }
+        .main-link-card:nth-child(4n+3) { border-left-color: #f59e0b; }
+        .main-link-card:nth-child(4n+4) { border-left-color: #8b5cf6; }
+
+        .main-link-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            flex-shrink: 0;
+        }
+
+        .main-link-card:nth-child(4n+1) .main-link-icon { background: #dbeafe; color: #2563eb; }
+        .main-link-card:nth-child(4n+2) .main-link-icon { background: #dcfce7; color: #10b981; }
+        .main-link-card:nth-child(4n+3) .main-link-icon { background: #fef3c7; color: #f59e0b; }
+        .main-link-card:nth-child(4n+4) .main-link-icon { background: #ede9fe; color: #8b5cf6; }
+
+        .main-link-content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .main-link-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--primary);
+            color: white;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .settings-tab {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .settings-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .settings-tab:hover:not(.active) {
+            background: var(--background);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Logo Settings */
+        .logo-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .current-logo-preview {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: var(--background);
+            border-radius: 12px;
+        }
+
+        .preview-box {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--border);
+            overflow: hidden;
+        }
+
+        .preview-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .file-input-label:hover {
+            background: var(--primary-dark);
+        }
+
+        .remove-logo-btn {
+            padding: 0.75rem 1.25rem;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .remove-logo-btn:hover {
+            background: #fecaca;
+        }
+
+        /* School Name Setting */
+        .school-name-setting {
+            padding: 1.5rem;
+            background: var(--background);
+            border-radius: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Button Settings */
+        .button-settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .button-setting-item {
+            padding: 1.25rem;
+            background: var(--background);
+            border-radius: 12px;
+            display: grid;
+            grid-template-columns: auto 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .button-setting-item .item-number {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            align-self: center;
+        }
+
+        .button-setting-item input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .button-setting-item input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .button-setting-item label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .delete-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+            align-self: center;
+        }
+
+        .delete-btn:hover {
+            background: #fecaca;
+        }
+
+        .add-button-btn {
+            padding: 1rem;
+            background: white;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .add-button-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Modal Footer */
+        .modal-footer {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            background: var(--background);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--background);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header-left {
+                flex-direction: column;
+            }
+
+            .header-right {
+                flex-direction: column;
+            }
+
+            .datetime {
+                border-right: none;
+                padding-right: 0;
+                text-align: center;
+            }
+
+            .button-setting-item {
+                grid-template-columns: 1fr;
+            }
+
+            .button-setting-item .item-number {
+                align-self: start;
+            }
+
+            .quick-links-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .main-links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Icon set */
+        .icon {
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-container" id="logoContainer">
+                <span class="logo-placeholder">🏫</span>
+            </div>
+            <div class="school-info">
+                <h1 id="schoolName">School Dashboard</h1>
+                <p id="schoolTagline">Welcome to our learning portal</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="datetime">
+                <div class="time" id="currentTime">00:00</div>
+                <div class="date" id="currentDate">Loading...</div>
+            </div>
+            <button class="settings-btn" onclick="openSettings()">
+                <span>⚙️</span> Settings
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Quick Links Section -->
+        <section class="quick-links-section">
+            <h2 class="section-title">Quick Links</h2>
+            <div class="quick-links-grid" id="quickLinksGrid">
+                <!-- Quick links will be populated here -->
+            </div>
+        </section>
+
+        <!-- Main Links Section -->
+        <section class="main-links-section">
+            <h2 class="section-title">Main Resources</h2>
+            <div class="main-links-grid" id="mainLinksGrid">
+                <!-- Main links will be populated here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© <span id="year"></span> School Dashboard. All rights reserved.</p>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⚙️ Dashboard Settings</h2>
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-tabs">
+                    <button class="settings-tab active" onclick="switchTab('general')">General</button>
+                    <button class="settings-tab" onclick="switchTab('quickLinks')">Quick Links</button>
+                    <button class="settings-tab" onclick="switchTab('mainLinks')">Main Links</button>
+                </div>
+
+                <!-- General Tab -->
+                <div class="tab-content active" id="generalTab">
+                    <div class="logo-settings">
+                        <h3 style="margin-bottom: 1rem; font-size: 1rem;">School Logo</h3>
+                        <div class="current-logo-preview">
+                            <div class="preview-box" id="logoPreview">
+                                <span style="font-size: 2rem; color: #94a3b8;">🖼️</span>
+                            </div>
+                            <div class="logo-actions">
+                                <div class="file-input-wrapper">
+                                    <label class="file-input-label">
+                                        📁 Upload Logo
+                                        <input type="file" id="logoInput" accept="image/*" onchange="handleLogoUpload(event)">
+                                    </label>
+                                </div>
+                                <button class="remove-logo-btn" onclick="removeLogo()">🗑️ Remove Logo</button>
+                            </div>
+                        </div>
+
+                        <div class="school-name-setting">
+                            <h3 style="margin-bottom: 1rem; font-size: 1rem;">School Information</h3>
+                            <div class="form-group">
+                                <label>School Name</label>
+                                <input type="text" id="schoolNameInput" placeholder="Enter school name">
+                            </div>
+                            <div class="form-group">
+                                <label>Tagline / Subtitle</label>
+                                <input type="text" id="schoolTaglineInput" placeholder="Enter tagline or subtitle">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links Tab -->
+                <div class="tab-content" id="quickLinksTab">
+                    <div class="button-settings-list" id="quickLinksSettings">
+                        <!-- Quick link settings will be populated here -->
+                    </div>
+                    <button class="add-button-btn" onclick="addQuickLink()">
+                        <span>➕</span> Add Quick Link
+                    </button>
+                </div>
+
+                <!-- Main Links Tab -->
+                <div class="tab-content" id="mainLinksTab">
+                    <div class="button-settings-list" id="mainLinksSettings">
+                        <!-- Main link settings will be populated here -->
+                    </div>
+                    <button class="add-button-btn" onclick="addMainLink()">
+                        <span>➕</span> Add Main Link
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default data
+        const defaultQuickLinks = [
+            { name: 'Student Portal', url: '#', icon: '👨‍🎓' },
+            { name: 'Teacher Portal', url: '#', icon: '👩‍🏫' },
+            { name: 'Library', url: '#', icon: '📚' },
+            { name: 'Calendar', url: '#', icon: '📅' },
+            { name: 'Announcements', url: '#', icon: '📢' },
+            { name: 'Grades', url: '#', icon: '📊' },
+            { name: 'Attendance', url: '#', icon: '✅' },
+            { name: 'Email', url: '#', icon: '📧' }
+        ];
+
+        const defaultMainLinks = [
+            { name: 'Learning Management System', url: '#', description: 'Access courses and assignments', icon: '🎓' },
+            { name: 'School Website', url: '#', description: 'Official school information', icon: '🌐' },
+            { name: 'Parent Portal', url: '#', description: 'For parents and guardians', icon: '👪' },
+            { name: 'IT Support', url: '#', description: 'Technical assistance', icon: '🔧' },
+            { name: 'Cafeteria Menu', url: '#', description: 'Weekly meal schedule', icon: '🍽️' },
+            { name: 'Sports & Activities', url: '#', description: 'Extracurricular programs', icon: '⚽' }
+        ];
+
+        // Load data from localStorage or use defaults
+        let quickLinks = JSON.parse(localStorage.getItem('quickLinks')) || defaultQuickLinks;
+        let mainLinks = JSON.parse(localStorage.getItem('mainLinks')) || defaultMainLinks;
+        let schoolSettings = JSON.parse(localStorage.getItem('schoolSettings')) || {
+            name: 'School Dashboard',
+            tagline: 'Welcome to our learning portal',
+            logo: null
+        };
+
+        // Icons for new links
+        const quickIcons = ['📱', '💻', '📝', '🔔', '📋', '🎯', '💡', '🔍', '📌', '⭐'];
+        const mainIcons = ['📚', '🎓', '🌟', '🔬', '🎨', '🎭', '🎵', '🏆', '🌍', '💬'];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderQuickLinks();
+            renderMainLinks();
+            loadSchoolSettings();
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            document.getElementById('year').textContent = new Date().getFullYear();
+        });
+
+        // Render Quick Links
+        function renderQuickLinks() {
+            const grid = document.getElementById('quickLinksGrid');
+            grid.innerHTML = quickLinks.map((link, index) => `
+                <a href="${link.url}" class="quick-link-card" target="_blank">
+                    <div class="quick-link-icon">${link.icon || '🔗'}</div>
+                    <div class="quick-link-title">${link.name}</div>
+                </a>
+            `).join('');
+        }
+
+        // Render Main Links
+        function renderMainLinks() {
+            const grid = document.getElementById('mainLinksGrid');
+            grid.innerHTML = mainLinks.map((link, index) => `
+                <a href="${link.url}" class="main-link-card" target="_blank">
+                    <div class="main-link-icon">${link.icon || '🔗'}</div>
+                    <div class="main-link-content">
+                        <h3>${link.name}</h3>
+                        <p>${link.description || 'Click to open'}</p>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        // Load School Settings
+        function loadSchoolSettings() {
+            document.getElementById('schoolName').textContent = schoolSettings.name;
+            document.getElementById('schoolTagline').textContent = schoolSettings.tagline;
+            
+            const logoContainer = document.getElementById('logoContainer');
+            if (schoolSettings.logo) {
+                logoContainer.innerHTML = `<img src="${schoolSettings.logo}" alt="School Logo">`;
+            } else {
+                logoContainer.innerHTML = '<span class="logo-placeholder">🏫</span>';
+            }
+        }
+
+        // Update Date/Time
+        function updateDateTime() {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit' };
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', timeOptions);
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', dateOptions);
+        }
+
+        // Settings Modal
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+            document.getElementById('schoolNameInput').value = schoolSettings.name;
+            document.getElementById('schoolTaglineInput').value = schoolSettings.tagline;
+            
+            // Update logo preview
+            const preview = document.getElementById('logoPreview');
+            if (schoolSettings.logo) {
+                preview.innerHTML = `<img src="${schoolSettings.logo}" alt="Logo Preview">`;
+            } else {
+                preview.innerHTML = '<span style="font-size: 2rem; color: #94a3b8;">🖼️</span>';
+            }
+            
+            renderQuickLinksSettings();
+            renderMainLinksSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.settings-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Logo handling
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    schoolSettings.logo = e.target.result;
+                    const preview = document.getElementById('logoPreview');
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Logo Preview">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeLogo() {
+            schoolSettings.logo = null;
+            document.getElementById('logoPreview').innerHTML = '<span style="font-size: 2rem; color: #94a3b8;">🖼️</span>';
+            document.getElementById('logoInput').value = '';
+        }
+
+        // Quick Links Settings
+        function renderQuickLinksSettings() {
+            const container = document.getElementById('quickLinksSettings');
+            container.innerHTML = quickLinks.map((link, index) => `
+                <div class="button-setting-item">
+                    <div class="item-number">${index + 1}</div>
+                    <div>
+                        <label>Button Name</label>
+                        <input type="text" value="${link.name}" onchange="updateQuickLink(${index}, 'name', this.value)">
+                    </div>
+                    <div>
+                        <label>URL</label>
+                        <input type="text" value="${link.url}" onchange="updateQuickLink(${index}, 'url', this.value)">
+                    </div>
+                    <button class="delete-btn" onclick="deleteQuickLink(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function updateQuickLink(index, field, value) {
+            quickLinks[index][field] = value;
+        }
+
+        function addQuickLink() {
+            const randomIcon = quickIcons[Math.floor(Math.random() * quickIcons.length)];
+            quickLinks.push({ name: 'New Link', url: '#', icon: randomIcon });
+            renderQuickLinksSettings();
+        }
+
+        function deleteQuickLink(index) {
+            if (quickLinks.length > 1) {
+                quickLinks.splice(index, 1);
+                renderQuickLinksSettings();
+            } else {
+                alert('You must have at least one quick link.');
+            }
+        }
+
+        // Main Links Settings
+        function renderMainLinksSettings() {
+            const container = document.getElementById('mainLinksSettings');
+            container.innerHTML = mainLinks.map((link, index) => `
+                <div class="button-setting-item">
+                    <div class="item-number">${index + 1}</div>
+                    <div>
+                        <label>Button Name</label>
+                        <input type="text" value="${link.name}" onchange="updateMainLink(${index}, 'name', this.value)">
+                    </div>
+                    <div>
+                        <label>URL</label>
+                        <input type="text" value="${link.url}" onchange="updateMainLink(${index}, 'url', this.value)">
+                    </div>
+                    <button class="delete-btn" onclick="deleteMainLink(${index})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function updateMainLink(index, field, value) {
+            mainLinks[index][field] = value;
+        }
+
+        function addMainLink() {
+            const randomIcon = mainIcons[Math.floor(Math.random() * mainIcons.length)];
+            mainLinks.push({ name: 'New Resource', url: '#', description: 'Click to open', icon: randomIcon });
+            renderMainLinksSettings();
+        }
+
+        function deleteMainLink(index) {
+            if (mainLinks.length > 1) {
+                mainLinks.splice(index, 1);
+                renderMainLinksSettings();
+            } else {
+                alert('You must have at least one main link.');
+            }
+        }
+
+        // Save Settings
+        function saveSettings() {
+            // Update school settings
+            schoolSettings.name = document.getElementById('schoolNameInput').value;
+            schoolSettings.tagline = document.getElementById('schoolTaglineInput').value;
+            
+            // Save to localStorage
+            localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+            localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
+            localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+            
+            // Update display
+            loadSchoolSettings();
+            renderQuickLinks();
+            renderMainLinks();
+            
+            closeSettings();
+            
+            // Show confirmation
+            showNotification('Settings saved successfully!');
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                background: #10b981;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 2000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = '✅ ' + message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Close modal on outside click
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSettings();
+            }
+        });
+    </script>
+</body>
+</html>
