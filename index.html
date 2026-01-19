@@ -1208,15 +1208,15 @@
                     <div class="item-number">${index + 1}</div>
                     <div>
                         <label>Username${user.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}</label>
-                        <input type="text" value="${user.username}" onchange="updateUser(${index}, 'username', this.value)" ${user.isAdmin ? 'readonly' : ''}>
+                        <input type="text" value="${user.username}" onchange="updateUser(${index}, 'username', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Display Name</label>
-                        <input type="text" value="${user.displayName}" onchange="updateUser(${index}, 'displayName', this.value)">
+                        <input type="text" value="${user.displayName}" onchange="updateUser(${index}, 'displayName', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Password</label>
-                        <input type="password" value="${user.password}" onchange="updateUser(${index}, 'password', this.value)">
+                        <input type="${user.isAdmin ? 'text' : 'password'}" value="${user.isAdmin ? '••••••••••••' : user.password}" onchange="updateUser(${index}, 'password', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <button class="delete-btn" onclick="deleteUser(${index})" ${user.isAdmin ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>🗑️</button>
                 </div>
@@ -1224,8 +1224,8 @@
         }
 
         function updateUser(index, field, value) {
-            // Prevent changing admin username
-            if (users[index].isAdmin && field === 'username') {
+            // Prevent changing any admin fields
+            if (users[index].isAdmin) {
                 return;
             }
             users[index][field] = value;
