@@ -1455,7 +1455,7 @@
         }
 
         /* Modal styles for Google Auth */
-        .modal {
+        .google-auth-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -1468,11 +1468,11 @@
             z-index: 10000;
         }
 
-        .modal.show, .modal[style*="display: flex"] {
+        .google-auth-modal.show, .google-auth-modal[style*="display: flex"] {
             display: flex;
         }
 
-        .modal-content {
+        .google-auth-modal .modal-content {
             background: white;
             border-radius: var(--radius-xl);
             max-width: 600px;
@@ -2919,7 +2919,7 @@
         // Show authentication modal with two options
         function showGoogleAuthModal() {
             const modalHTML = `
-                <div id="googleAuthModal" class="modal" style="display: flex;">
+                <div id="googleAuthModal" class="google-auth-modal" style="display: flex;">
                     <div class="modal-content" style="max-width: 560px;">
                         <div class="modal-header">
                             <h2>☁️ Connect to Google Drive</h2>
