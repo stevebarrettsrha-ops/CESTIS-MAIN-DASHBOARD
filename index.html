@@ -2489,7 +2489,9 @@
             if (users[index].isAdmin) {
                 return;
             }
+            console.log('Updating user:', { index, field, value, before: users[index][field] });
             users[index][field] = value;
+            console.log('After update:', { username: users[index].username, password: users[index].password });
         }
 
         function addUser() {
@@ -2798,7 +2800,10 @@
             // Update school settings
             schoolSettings.name = document.getElementById('schoolNameInput').value;
             schoolSettings.tagline = document.getElementById('schoolTaglineInput').value;
-            
+
+            // Debug: Log users being saved
+            console.log('Saving users to localStorage:', users.map(u => ({ username: u.username, password: u.password, isAdmin: u.isAdmin })));
+
             // Save to localStorage
             localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
             localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
