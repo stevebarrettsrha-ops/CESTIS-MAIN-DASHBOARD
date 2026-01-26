@@ -2049,6 +2049,9 @@
         // Load users from localStorage or use defaults
         let users = JSON.parse(localStorage.getItem('dashboardUsers')) || defaultUsers;
 
+        // Debug: Log loaded users on page load
+        console.log('Loaded users from localStorage:', users.map(u => ({ username: u.username, password: u.password, isAdmin: u.isAdmin })));
+
         // Current logged in user (full object reference)
         let currentUser = null;
 
@@ -2113,11 +2116,17 @@
             const password = document.getElementById('password').value;
             const loginError = document.getElementById('loginError');
 
+            // Debug: Log login attempt and users array
+            console.log('Login attempt:', { username, password });
+            console.log('Available users:', users.map(u => ({ username: u.username, password: u.password, isAdmin: u.isAdmin })));
+
             // Find user with case-insensitive username match
             const user = users.find(u =>
                 u.username.toLowerCase() === username.toLowerCase() &&
                 u.password === password
             );
+
+            console.log('Found user:', user ? 'Yes' : 'No');
 
             if (user) {
                 loginError.classList.remove('show');
@@ -2480,7 +2489,9 @@
             if (users[index].isAdmin) {
                 return;
             }
+            console.log('Updating user:', { index, field, value, before: users[index][field] });
             users[index][field] = value;
+            console.log('After update:', { username: users[index].username, password: users[index].password });
         }
 
         function addUser() {
@@ -2789,7 +2800,10 @@
             // Update school settings
             schoolSettings.name = document.getElementById('schoolNameInput').value;
             schoolSettings.tagline = document.getElementById('schoolTaglineInput').value;
-            
+
+            // Debug: Log users being saved
+            console.log('Saving users to localStorage:', users.map(u => ({ username: u.username, password: u.password, isAdmin: u.isAdmin })));
+
             // Save to localStorage
             localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
             localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
