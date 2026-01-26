@@ -2026,6 +2026,14 @@
     </div>
 
     <script>
+        // Utility function to escape HTML special characters
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // Default admin user
         const defaultUsers = [
             {
@@ -2441,19 +2449,19 @@
                     <div class="item-number">${index + 1}</div>
                     <div>
                         <label>Username${user.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}</label>
-                        <input type="text" value="${user.username}" onchange="updateUser(${index}, 'username', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <input type="text" value="${escapeHtml(user.username)}" onchange="updateUser(${index}, 'username', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Display Name</label>
-                        <input type="text" value="${user.displayName}" onchange="updateUser(${index}, 'displayName', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <input type="text" value="${escapeHtml(user.displayName)}" onchange="updateUser(${index}, 'displayName', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Email</label>
-                        <input type="email" value="${user.email || ''}" onchange="updateUser(${index}, 'email', this.value)" placeholder="user@example.com">
+                        <input type="email" value="${escapeHtml(user.email || '')}" onchange="updateUser(${index}, 'email', this.value)" placeholder="user@example.com">
                     </div>
                     <div>
                         <label>Password</label>
-                        <input type="${user.isAdmin ? 'text' : 'password'}" value="${user.isAdmin ? '••••••••••••' : user.password}" onchange="updateUser(${index}, 'password', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <input type="text" value="${user.isAdmin ? '••••••••••••' : escapeHtml(user.password)}" onchange="updateUser(${index}, 'password', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Role</label>
