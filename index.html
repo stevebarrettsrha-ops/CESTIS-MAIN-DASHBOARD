@@ -891,6 +891,128 @@
             display: none;
         }
 
+        /* First-Time Sync Prompt Styles */
+        .first-time-sync-prompt {
+            background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .first-time-sync-prompt.hidden {
+            display: none;
+        }
+
+        .sync-prompt-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .first-time-sync-prompt h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+
+        .first-time-sync-prompt p {
+            font-size: 0.85rem;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .sync-prompt-btn {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        .sync-prompt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.4);
+        }
+
+        .sync-prompt-btn:active {
+            transform: translateY(0);
+        }
+
+        .sync-prompt-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .sync-prompt-dismiss {
+            margin-top: 0.75rem;
+        }
+
+        .sync-prompt-dismiss a {
+            font-size: 0.8rem;
+            color: #64748b;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .sync-prompt-dismiss a:hover {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+
+        .sync-status-message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .sync-status-message.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .sync-status-message.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .sync-status-icon {
+            animation: pulse-icon 1.5s ease-in-out infinite;
+        }
+
+        .sync-status-message.success .sync-status-icon,
+        .sync-status-message.error .sync-status-icon {
+            animation: none;
+        }
+
+        @keyframes pulse-icon {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         /* Forgot Password Styles */
         .forgot-password-link {
             text-align: center;
@@ -1630,6 +1752,24 @@
                 <h1>School Dashboard</h1>
                 <p>Sign in to access the dashboard</p>
             </div>
+
+            <!-- First-Time User Sync Prompt -->
+            <div class="first-time-sync-prompt" id="firstTimeSyncPrompt">
+                <div class="sync-prompt-icon">☁️</div>
+                <h3>First Time Here?</h3>
+                <p>If you're logging in for the first time or on a new device, please sync with Google Cloud first to get your account data.</p>
+                <button type="button" class="sync-prompt-btn" onclick="initiateLoginPageSync()">
+                    <span>🔄</span> Connect & Sync with Google
+                </button>
+                <div class="sync-prompt-dismiss">
+                    <a onclick="dismissFirstTimePrompt()">I already have local data - skip this</a>
+                </div>
+                <div class="sync-status-message" id="loginSyncStatus" style="display: none;">
+                    <span class="sync-status-icon">⏳</span>
+                    <span class="sync-status-text" id="loginSyncStatusText">Connecting...</span>
+                </div>
+            </div>
+
             <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
                 <div class="login-error" id="loginError">
                     <span>⚠️</span>
@@ -2444,10 +2584,12 @@
         function handleLogout() {
             sessionStorage.removeItem('isLoggedIn');
             sessionStorage.removeItem('loggedInUser');
+            sessionStorage.removeItem('firstTimeSyncDismissed'); // Reset sync prompt for next login
             checkAuth();
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('loginError').classList.remove('show');
+            checkFirstTimeSyncPrompt(); // Show sync prompt again on logout
         }
 
         // User Management Functions
@@ -2557,6 +2699,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
+            checkFirstTimeSyncPrompt(); // Check if first-time sync prompt should be shown
             renderQuickLinks();
             renderMainLinks();
             loadSchoolSettings();
@@ -3820,6 +3963,13 @@
 
             updateCloudUI(true);
 
+            // Check if this is a login page sync request
+            if (isLoginPageSync) {
+                // Handle login page sync flow
+                await handleLoginPageSyncCallback();
+                return;
+            }
+
             // Try to find existing backup file
             await findExistingBackupFile();
 
@@ -4032,10 +4182,234 @@
             console.error('Google auth error:', error);
             if (error.type === 'popup_closed') {
                 // User closed the popup, don't show error
+                // Reset login page sync flag if it was set
+                if (isLoginPageSync) {
+                    isLoginPageSync = false;
+                    updateLoginSyncStatus('', false);
+                }
+                return;
+            }
+            // Reset login page sync flag on error
+            if (isLoginPageSync) {
+                isLoginPageSync = false;
+                updateLoginSyncStatus('Connection failed. Please try again.', false, true);
                 return;
             }
             alert('Failed to authenticate with Google. Please try the manual token method.');
             showGoogleAuthModal();
+        }
+
+        // =========================================
+        // Login Page First-Time Sync Functions
+        // =========================================
+
+        let isLoginPageSync = false; // Flag to track if sync was initiated from login page
+
+        // Initiate Google Sign-In from the login page
+        function initiateLoginPageSync() {
+            isLoginPageSync = true;
+
+            // Update UI to show connecting status
+            updateLoginSyncStatus('Connecting to Google...', true);
+
+            // Disable the sync button
+            const syncBtn = document.querySelector('.sync-prompt-btn');
+            if (syncBtn) {
+                syncBtn.disabled = true;
+                syncBtn.innerHTML = '<span>⏳</span> Connecting...';
+            }
+
+            // Trigger Google Sign-In
+            if (googleTokenClient) {
+                googleTokenClient.requestAccessToken();
+            } else {
+                initGoogleAuth();
+                setTimeout(() => {
+                    if (googleTokenClient) {
+                        googleTokenClient.requestAccessToken();
+                    } else {
+                        isLoginPageSync = false;
+                        updateLoginSyncStatus('Google Sign-In not available. Please refresh and try again.', false, true);
+                        resetLoginSyncButton();
+                    }
+                }, 500);
+            }
+        }
+
+        // Handle the callback specifically for login page sync
+        async function handleLoginPageSyncCallback() {
+            updateLoginSyncStatus('Finding backup file...', true);
+
+            try {
+                // Find existing backup file
+                await findExistingBackupFile();
+
+                if (cloudFileId) {
+                    updateLoginSyncStatus('Downloading user data...', true);
+
+                    // Perform sync from cloud
+                    const syncSuccess = await performLoginPageSync();
+
+                    if (syncSuccess) {
+                        updateLoginSyncStatus('Sync complete! You can now log in.', false, false, true);
+
+                        // Hide the first-time prompt after successful sync
+                        setTimeout(() => {
+                            hideFirstTimeSyncPrompt();
+                        }, 2000);
+                    } else {
+                        updateLoginSyncStatus('Sync failed. Please try again.', false, true);
+                        resetLoginSyncButton();
+                    }
+                } else {
+                    updateLoginSyncStatus('No backup found. Please contact your administrator.', false, true);
+                    resetLoginSyncButton();
+                }
+            } catch (error) {
+                console.error('Login page sync error:', error);
+                updateLoginSyncStatus('Sync failed: ' + error.message, false, true);
+                resetLoginSyncButton();
+            }
+
+            isLoginPageSync = false;
+        }
+
+        // Perform the actual sync for login page
+        async function performLoginPageSync() {
+            try {
+                if (!cloudFileId || !googleAccessToken) {
+                    return false;
+                }
+
+                const response = await fetch(
+                    `https://www.googleapis.com/drive/v3/files/${cloudFileId}?alt=media`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${googleAccessToken}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to download backup');
+                }
+
+                const backup = await response.json();
+
+                // Validate backup format
+                if (!backup.version || !backup.data) {
+                    throw new Error('Invalid backup format');
+                }
+
+                // Restore users from backup
+                if (backup.data.users) {
+                    users = backup.data.users;
+                    localStorage.setItem('dashboardUsers', JSON.stringify(users));
+                    console.log('Users synced from cloud:', users.length, 'users');
+                }
+
+                // Also restore other data for consistency
+                if (backup.data.quickLinks) {
+                    quickLinks = backup.data.quickLinks;
+                    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+                }
+                if (backup.data.mainLinks) {
+                    mainLinks = backup.data.mainLinks;
+                    localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
+                }
+                if (backup.data.schoolSettings) {
+                    schoolSettings = backup.data.schoolSettings;
+                    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+                }
+
+                // Update last sync info
+                lastSyncTime = new Date();
+                lastSavedBy = backup.savedBy || 'Unknown';
+                localStorage.setItem('schoolDashboardLastSyncTime', lastSyncTime.toISOString());
+
+                return true;
+            } catch (error) {
+                console.error('Perform login page sync error:', error);
+                return false;
+            }
+        }
+
+        // Update the sync status message on login page
+        function updateLoginSyncStatus(message, isLoading, isError = false, isSuccess = false) {
+            const statusDiv = document.getElementById('loginSyncStatus');
+            const statusText = document.getElementById('loginSyncStatusText');
+            const statusIcon = statusDiv ? statusDiv.querySelector('.sync-status-icon') : null;
+
+            if (!statusDiv || !statusText) return;
+
+            if (message) {
+                statusDiv.style.display = 'flex';
+                statusText.textContent = message;
+
+                // Update icon and styling
+                statusDiv.classList.remove('success', 'error');
+                if (isSuccess) {
+                    statusDiv.classList.add('success');
+                    if (statusIcon) statusIcon.textContent = '✅';
+                } else if (isError) {
+                    statusDiv.classList.add('error');
+                    if (statusIcon) statusIcon.textContent = '❌';
+                } else {
+                    if (statusIcon) statusIcon.textContent = '⏳';
+                }
+            } else {
+                statusDiv.style.display = 'none';
+            }
+        }
+
+        // Reset the sync button to its original state
+        function resetLoginSyncButton() {
+            const syncBtn = document.querySelector('.sync-prompt-btn');
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = '<span>🔄</span> Connect & Sync with Google';
+            }
+        }
+
+        // Dismiss the first-time sync prompt
+        function dismissFirstTimePrompt() {
+            hideFirstTimeSyncPrompt();
+            // Store preference to not show the prompt again this session
+            sessionStorage.setItem('firstTimeSyncDismissed', 'true');
+        }
+
+        // Hide the first-time sync prompt
+        function hideFirstTimeSyncPrompt() {
+            const prompt = document.getElementById('firstTimeSyncPrompt');
+            if (prompt) {
+                prompt.classList.add('hidden');
+            }
+        }
+
+        // Show the first-time sync prompt
+        function showFirstTimeSyncPrompt() {
+            const prompt = document.getElementById('firstTimeSyncPrompt');
+            if (prompt) {
+                prompt.classList.remove('hidden');
+            }
+        }
+
+        // Check if first-time sync prompt should be shown
+        function checkFirstTimeSyncPrompt() {
+            // Don't show if already dismissed this session
+            if (sessionStorage.getItem('firstTimeSyncDismissed') === 'true') {
+                hideFirstTimeSyncPrompt();
+                return;
+            }
+
+            // Don't show if user is already logged in
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                hideFirstTimeSyncPrompt();
+                return;
+            }
+
+            // Show the prompt by default for login page
+            showFirstTimeSyncPrompt();
         }
 
         // Disconnect from Google Drive
