@@ -1035,7 +1035,7 @@
             background: var(--background);
             border-radius: 12px;
             display: grid;
-            grid-template-columns: auto 1fr 1fr 1fr 1fr auto;
+            grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr auto;
             gap: 1rem;
             align-items: end;
         }
@@ -2032,6 +2032,7 @@
                 username: 'Cestisadmin',
                 password: 'cestisadmin123$',
                 displayName: 'System Administrator',
+                email: 'admin@cestis.com',
                 role: 'Administrator',
                 isAdmin: true
             }
@@ -2447,6 +2448,10 @@
                         <input type="text" value="${user.displayName}" onchange="updateUser(${index}, 'displayName', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
+                        <label>Email</label>
+                        <input type="email" value="${user.email || ''}" onchange="updateUser(${index}, 'email', this.value)" placeholder="user@example.com">
+                    </div>
+                    <div>
                         <label>Password</label>
                         <input type="${user.isAdmin ? 'text' : 'password'}" value="${user.isAdmin ? '••••••••••••' : user.password}" onchange="updateUser(${index}, 'password', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
@@ -2475,6 +2480,7 @@
                 username: 'newuser',
                 password: 'password123',
                 displayName: 'New User',
+                email: '',
                 role: 'User',
                 isAdmin: false
             });
