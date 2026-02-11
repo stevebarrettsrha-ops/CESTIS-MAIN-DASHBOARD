@@ -415,6 +415,7 @@
 
         .settings-tabs {
             display: flex;
+            flex-wrap: wrap;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
             border-bottom: 1px solid var(--border);
@@ -1218,6 +1219,286 @@
             display: none;
         }
 
+        /* ============================================
+           Quick Links Approval Styles
+           ============================================ */
+        .approval-users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .approval-user-card {
+            background: var(--background);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .approval-user-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .approval-user-card.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .approval-user-avatar {
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0 auto 0.75rem auto;
+        }
+
+        .approval-user-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .approval-user-role {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .approval-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .approval-back-btn:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .approval-user-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .approval-user-header-avatar {
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .approval-user-header-info h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .approval-user-header-info span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .approval-links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .approval-link-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            background: var(--background);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .approval-link-item:hover {
+            border-color: var(--primary);
+        }
+
+        .approval-link-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .approval-link-icon {
+            font-size: 1.3rem;
+        }
+
+        .approval-link-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        .approval-link-url {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Toggle Switch */
+        .approval-toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .approval-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .approval-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .approval-toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .approval-toggle input:checked + .approval-toggle-slider {
+            background-color: #10b981;
+        }
+
+        .approval-toggle input:checked + .approval-toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        .approval-status-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            min-width: 75px;
+            text-align: right;
+            margin-right: 0.5rem;
+        }
+
+        .approval-status-label.approved {
+            color: #10b981;
+        }
+
+        .approval-status-label.disapproved {
+            color: #ef4444;
+        }
+
+        .approval-bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .approval-bulk-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .approval-bulk-btn:hover {
+            background: var(--background);
+        }
+
+        .approval-bulk-btn.approve-all {
+            color: #10b981;
+            border-color: #10b981;
+        }
+
+        .approval-bulk-btn.approve-all:hover {
+            background: #ecfdf5;
+        }
+
+        .approval-bulk-btn.disapprove-all {
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .approval-bulk-btn.disapprove-all:hover {
+            background: #fef2f2;
+        }
+
+        .approval-no-users {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .approval-no-users span {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .approval-users-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .approval-link-url {
+                display: none;
+            }
+        }
+
         @media (max-width: 768px) {
             .user-setting-item {
                 grid-template-columns: 1fr;
@@ -2010,6 +2291,7 @@
                     <button class="settings-tab" onclick="switchTab('quickLinks')">Quick Links</button>
                     <button class="settings-tab" onclick="switchTab('mainLinks')">Main Links</button>
                     <button class="settings-tab" onclick="switchTab('users')">Users</button>
+                    <button class="settings-tab" onclick="switchTab('quickLinksApproval')">Quick Links Approval</button>
                 </div>
 
                 <!-- General Tab -->
@@ -2078,6 +2360,13 @@
                     <div id="current2FAStatus">
                         <h3 style="margin-bottom: var(--space-4); font-size: 1rem;">🔐 Two-Factor Authentication</h3>
                         <!-- 2FA status will be populated here by render2FAStatus() -->
+                    </div>
+                </div>
+
+                <!-- Quick Links Approval Tab -->
+                <div class="tab-content" id="quickLinksApprovalTab">
+                    <div id="quickLinksApprovalContent">
+                        <!-- Approval content will be populated by renderQuickLinksApprovalTab() -->
                     </div>
                 </div>
             </div>
@@ -2537,6 +2826,11 @@
                     localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
                 }
 
+                if (backupData.data.quickLinkApprovals) {
+                    quickLinkApprovals = backupData.data.quickLinkApprovals;
+                    localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
+                }
+
                 // Update sync tracking
                 lastSyncTime = new Date();
                 localStorage.setItem('schoolDashboardLastSyncTime', lastSyncTime.toISOString());
@@ -2662,6 +2956,144 @@
             }
         }
 
+        // Quick Links Approval Functions
+        let selectedApprovalUser = null;
+
+        function renderQuickLinksApprovalTab() {
+            const container = document.getElementById('quickLinksApprovalContent');
+            const nonAdminUsers = users.filter(u => !u.isAdmin);
+
+            if (selectedApprovalUser) {
+                // Show the approval detail view for the selected user
+                const user = users.find(u => u.username === selectedApprovalUser);
+                if (!user) {
+                    selectedApprovalUser = null;
+                    renderQuickLinksApprovalTab();
+                    return;
+                }
+                const initials = user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                const userApprovals = quickLinkApprovals[user.username] || {};
+
+                container.innerHTML = `
+                    <button class="approval-back-btn" onclick="selectedApprovalUser=null;renderQuickLinksApprovalTab();">
+                        ← Back to Users
+                    </button>
+                    <div class="approval-user-header">
+                        <div class="approval-user-header-avatar">${initials}</div>
+                        <div class="approval-user-header-info">
+                            <h4>${escapeHtml(user.displayName)}</h4>
+                            <span>${escapeHtml(user.role)} &middot; ${escapeHtml(user.username)}</span>
+                        </div>
+                    </div>
+                    <div class="approval-bulk-actions">
+                        <button class="approval-bulk-btn approve-all" onclick="bulkApproval('${escapeHtml(user.username)}', true)">Approve All</button>
+                        <button class="approval-bulk-btn disapprove-all" onclick="bulkApproval('${escapeHtml(user.username)}', false)">Disapprove All</button>
+                    </div>
+                    <div class="approval-links-list">
+                        ${quickLinks.map((link, index) => {
+                            const isApproved = userApprovals[link.name] !== false;
+                            return `
+                            <div class="approval-link-item">
+                                <div class="approval-link-info">
+                                    <span class="approval-link-icon">${link.icon || '🔗'}</span>
+                                    <div>
+                                        <div class="approval-link-name">${escapeHtml(link.name)}</div>
+                                        <div class="approval-link-url">${escapeHtml(link.url)}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;align-items:center;">
+                                    <span class="approval-status-label ${isApproved ? 'approved' : 'disapproved'}" id="approvalLabel_${index}">
+                                        ${isApproved ? 'Approved' : 'Disapproved'}
+                                    </span>
+                                    <label class="approval-toggle">
+                                        <input type="checkbox" ${isApproved ? 'checked' : ''} onchange="toggleQuickLinkApproval('${escapeHtml(user.username)}', ${index}, this.checked)">
+                                        <span class="approval-toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                // Show user cards grid
+                if (nonAdminUsers.length === 0) {
+                    container.innerHTML = `
+                        <div class="approval-no-users">
+                            <span>👥</span>
+                            <p>No users created yet.</p>
+                            <p style="font-size: 0.85rem;">Add users in the "Users" tab to manage their quick link access.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                        Select a user to manage which quick links they can access on the dashboard.
+                    </p>
+                    <div class="approval-users-grid">
+                        ${nonAdminUsers.map(user => {
+                            const initials = user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                            const userApprovals = quickLinkApprovals[user.username] || {};
+                            const approvedCount = quickLinks.filter(link => userApprovals[link.name] !== false).length;
+                            return `
+                            <div class="approval-user-card" onclick="selectUserForApproval('${escapeHtml(user.username)}')">
+                                <div class="approval-user-avatar">${initials}</div>
+                                <div class="approval-user-name">${escapeHtml(user.displayName)}</div>
+                                <div class="approval-user-role">${escapeHtml(user.role)}</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                                    ${approvedCount}/${quickLinks.length} links approved
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function selectUserForApproval(username) {
+            selectedApprovalUser = username;
+            renderQuickLinksApprovalTab();
+        }
+
+        function toggleQuickLinkApproval(username, linkIndex, isApproved) {
+            const linkName = quickLinks[linkIndex].name;
+
+            if (!quickLinkApprovals[username]) {
+                quickLinkApprovals[username] = {};
+            }
+            quickLinkApprovals[username][linkName] = isApproved;
+
+            // Update the label text and class
+            const label = document.getElementById('approvalLabel_' + linkIndex);
+            if (label) {
+                label.textContent = isApproved ? 'Approved' : 'Disapproved';
+                label.className = 'approval-status-label ' + (isApproved ? 'approved' : 'disapproved');
+            }
+        }
+
+        function bulkApproval(username, approve) {
+            if (!quickLinkApprovals[username]) {
+                quickLinkApprovals[username] = {};
+            }
+            quickLinks.forEach(link => {
+                quickLinkApprovals[username][link.name] = approve;
+            });
+            renderQuickLinksApprovalTab();
+        }
+
+        function isQuickLinkApprovedForUser(linkName, user) {
+            // Admin always sees all links
+            if (!user || user.isAdmin || user.role === 'Administrator') {
+                return true;
+            }
+            const userApprovals = quickLinkApprovals[user.username];
+            if (!userApprovals) {
+                return true; // No approvals set = all approved by default
+            }
+            return userApprovals[linkName] !== false;
+        }
+
         // Default data
         const defaultQuickLinks = [
             { name: 'Student Portal', url: '#', icon: '👨‍🎓' },
@@ -2691,6 +3123,11 @@
             tagline: 'Welcome to our learning portal',
             logo: null
         };
+
+        // Quick Link Approvals: { "username": { "linkName": true/false } }
+        // If a user has no entry, all links are approved by default
+        // Admin users always see all links regardless of approvals
+        let quickLinkApprovals = JSON.parse(localStorage.getItem('quickLinkApprovals')) || {};
 
         // Icons for new links
         const quickIcons = ['📱', '💻', '📝', '🔔', '📋', '🎯', '💡', '🔍', '📌', '⭐'];
@@ -2755,7 +3192,12 @@
         // Render Quick Links
         function renderQuickLinks() {
             const grid = document.getElementById('quickLinksGrid');
-            grid.innerHTML = quickLinks.map((link, index) => {
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+
+            // Filter quick links based on approvals for non-admin users
+            const visibleLinks = quickLinks.filter(link => isQuickLinkApprovedForUser(link.name, loggedInUser));
+
+            grid.innerHTML = visibleLinks.map((link, index) => {
                 const hasValidUrl = link.url && link.url !== '#' && link.url.trim() !== '';
                 const href = hasValidUrl ? link.url : 'javascript:void(0)';
                 const target = hasValidUrl ? 'target="_blank"' : '';
@@ -2828,6 +3270,8 @@
             renderMainLinksSettings();
             renderUsersSettings();
             render2FAStatus();
+            selectedApprovalUser = null;
+            renderQuickLinksApprovalTab();
         }
 
         function closeSettings() {
@@ -2952,7 +3396,8 @@
             localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
             localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
             localStorage.setItem('dashboardUsers', JSON.stringify(users));
-            
+            localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
+
             // Update display
             loadSchoolSettings();
             renderQuickLinks();
@@ -4102,6 +4547,11 @@
                     localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
                 }
 
+                if (backupData.data.quickLinkApprovals) {
+                    quickLinkApprovals = backupData.data.quickLinkApprovals;
+                    localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
+                }
+
                 // Update sync tracking
                 lastSyncTime = new Date();
                 localStorage.setItem('schoolDashboardLastSyncTime', lastSyncTime.toISOString());
@@ -4534,7 +4984,8 @@
                         users: users,
                         quickLinks: quickLinks,
                         mainLinks: mainLinks,
-                        schoolSettings: schoolSettings
+                        schoolSettings: schoolSettings,
+                        quickLinkApprovals: quickLinkApprovals
                     }
                 };
 
@@ -4684,6 +5135,11 @@
                 if (backupData.data.schoolSettings) {
                     schoolSettings = backupData.data.schoolSettings;
                     localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+                }
+
+                if (backupData.data.quickLinkApprovals) {
+                    quickLinkApprovals = backupData.data.quickLinkApprovals;
+                    localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
                 }
 
                 // Update last sync time
@@ -5176,6 +5632,11 @@
                 if (syncQuickLinks && backupData.data.quickLinks) {
                     quickLinks = backupData.data.quickLinks;
                     localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+                    // Also sync quick link approvals with quick links
+                    if (backupData.data.quickLinkApprovals) {
+                        quickLinkApprovals = backupData.data.quickLinkApprovals;
+                        localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
+                    }
                 }
 
                 if (syncMainLinks && backupData.data.mainLinks) {
