@@ -2639,12 +2639,15 @@
                 existingModal.remove();
             }
 
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
+
             const modalHTML = `
                 <div id="connectCloudOnLoginModal" class="google-auth-modal" style="display: flex;">
                     <div class="modal-content" style="max-width: 450px;">
                         <div class="modal-header">
-                            <h2>☁️ Connect to Cloud Storage?</h2>
-                            <button class="close-btn" onclick="closeConnectCloudOnLoginModal(false)">×</button>
+                            <h2>☁️ Connect to Cloud Storage${!isAdmin ? ' (Required)' : '?'}</h2>
+                            ${isAdmin ? '<button class="close-btn" onclick="closeConnectCloudOnLoginModal(false)">×</button>' : ''}
                         </div>
                         <div style="padding: var(--space-5);">
                             <div style="text-align: center; margin-bottom: var(--space-5);">
@@ -2652,22 +2655,26 @@
                             </div>
 
                             <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
-                                Connect to Google Drive to sync your dashboard data across devices and with other users.
+                                ${!isAdmin
+                                    ? 'You must connect to Google Drive and sync before accessing the dashboard. This ensures you have the latest permissions and data.'
+                                    : 'Connect to Google Drive to sync your dashboard data across devices and with other users.'}
                             </p>
 
                             <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
-                                <strong style="color: var(--info);">💡 Benefits:</strong>
+                                ${!isAdmin
+                                    ? '<strong style="color: var(--info);">🔒 Required:</strong><span style="color: var(--text-secondary); font-size: 0.9rem;"> Cloud sync is mandatory to load your dashboard permissions.</span>'
+                                    : `<strong style="color: var(--info);">💡 Benefits:</strong>
                                 <ul style="color: var(--text-secondary); font-size: 0.9rem; margin: var(--space-2) 0 0 var(--space-4); padding: 0;">
                                     <li>Backup your data securely</li>
                                     <li>Sync across multiple devices</li>
                                     <li>Share data with other users</li>
-                                </ul>
+                                </ul>`}
                             </div>
 
                             <div style="display: flex; gap: var(--space-3);">
-                                <button class="btn btn-secondary" onclick="closeConnectCloudOnLoginModal(false)" style="flex: 1;">
+                                ${isAdmin ? `<button class="btn btn-secondary" onclick="closeConnectCloudOnLoginModal(false)" style="flex: 1;">
                                     Skip
-                                </button>
+                                </button>` : ''}
                                 <button class="btn btn-primary" onclick="closeConnectCloudOnLoginModal(true)" style="flex: 1;">
                                     ☁️ Connect Now
                                 </button>
@@ -2682,6 +2689,14 @@
 
         // Close connect cloud on login modal
         function closeConnectCloudOnLoginModal(shouldConnect) {
+            // Non-admin users cannot skip - must connect
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
+
+            if (!shouldConnect && !isAdmin) {
+                return; // Block skip for non-admin users
+            }
+
             const modal = document.getElementById('connectCloudOnLoginModal');
             if (modal) {
                 modal.remove();
@@ -2699,12 +2714,15 @@
                 existingModal.remove();
             }
 
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
+
             const modalHTML = `
                 <div id="syncOnLoginModal" class="google-auth-modal" style="display: flex;">
                     <div class="modal-content" style="max-width: 450px;">
                         <div class="modal-header">
-                            <h2>☁️ Sync from Cloud?</h2>
-                            <button class="close-btn" onclick="closeSyncOnLoginModal(false)">×</button>
+                            <h2>☁️ Sync from Cloud${!isAdmin ? ' (Required)' : '?'}</h2>
+                            ${isAdmin ? '<button class="close-btn" onclick="closeSyncOnLoginModal(false)">×</button>' : ''}
                         </div>
                         <div style="padding: var(--space-5);">
                             <div style="text-align: center; margin-bottom: var(--space-5);">
@@ -2712,20 +2730,24 @@
                             </div>
 
                             <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
-                                Your Google Drive is connected. Would you like to sync the latest data from the cloud?
+                                ${!isAdmin
+                                    ? 'You must sync from the cloud before accessing the dashboard. This ensures you have the latest permissions and data.'
+                                    : 'Your Google Drive is connected. Would you like to sync the latest data from the cloud?'}
                             </p>
 
                             <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
-                                <strong style="color: var(--info);">💡 Tip:</strong>
+                                ${!isAdmin
+                                    ? '<strong style="color: var(--info);">🔒 Required:</strong><span style="color: var(--text-secondary); font-size: 0.9rem;"> Cloud sync is mandatory to load your dashboard permissions.</span>'
+                                    : `<strong style="color: var(--info);">💡 Tip:</strong>
                                 <span style="color: var(--text-secondary); font-size: 0.9rem;">
                                     Syncing ensures you have the latest data saved by other users.
-                                </span>
+                                </span>`}
                             </div>
 
                             <div style="display: flex; gap: var(--space-3);">
-                                <button class="btn btn-secondary" onclick="closeSyncOnLoginModal(false)" style="flex: 1;">
+                                ${isAdmin ? `<button class="btn btn-secondary" onclick="closeSyncOnLoginModal(false)" style="flex: 1;">
                                     Skip
-                                </button>
+                                </button>` : ''}
                                 <button class="btn btn-primary" onclick="closeSyncOnLoginModal(true)" style="flex: 1;">
                                     🔄 Sync Now
                                 </button>
@@ -2740,6 +2762,14 @@
 
         // Close sync on login modal
         async function closeSyncOnLoginModal(shouldSync) {
+            // Non-admin users cannot skip - must sync
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
+
+            if (!shouldSync && !isAdmin) {
+                return; // Block skip for non-admin users
+            }
+
             const modal = document.getElementById('syncOnLoginModal');
             if (modal) {
                 modal.remove();
@@ -4770,6 +4800,10 @@
                 if (backup.data.schoolSettings) {
                     schoolSettings = backup.data.schoolSettings;
                     localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+                }
+                if (backup.data.quickLinkApprovals) {
+                    quickLinkApprovals = backup.data.quickLinkApprovals;
+                    localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
                 }
 
                 // Update last sync info
