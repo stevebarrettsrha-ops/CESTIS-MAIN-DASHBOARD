@@ -2785,22 +2785,18 @@
             }, 500);
         }
 
-        // Show connect to cloud modal on login
+        // Show connect to cloud modal on login (mandatory for all users)
         function showConnectCloudOnLoginModal() {
             const existingModal = document.getElementById('connectCloudOnLoginModal');
             if (existingModal) {
                 existingModal.remove();
             }
 
-            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
-
             const modalHTML = `
                 <div id="connectCloudOnLoginModal" class="google-auth-modal" style="display: flex;">
                     <div class="modal-content" style="max-width: 450px;">
                         <div class="modal-header">
-                            <h2>☁️ Connect to Cloud Storage${!isAdmin ? ' (Required)' : '?'}</h2>
-                            ${isAdmin ? '<button class="close-btn" onclick="closeConnectCloudOnLoginModal(false)">×</button>' : ''}
+                            <h2>☁️ Connect to Cloud Storage (Required)</h2>
                         </div>
                         <div style="padding: var(--space-5);">
                             <div style="text-align: center; margin-bottom: var(--space-5);">
@@ -2808,26 +2804,14 @@
                             </div>
 
                             <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
-                                ${!isAdmin
-                                    ? 'You must connect to Google Drive and merge before accessing the dashboard. This ensures you have the latest permissions and data.'
-                                    : 'Connect to Google Drive to merge your dashboard data across devices and with other users.'}
+                                You must connect to Google Drive and merge from the cloud before accessing the dashboard. This ensures you have the latest data.
                             </p>
 
                             <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
-                                ${!isAdmin
-                                    ? '<strong style="color: var(--info);">🔒 Required:</strong><span style="color: var(--text-secondary); font-size: 0.9rem;"> Cloud merge is mandatory to load your dashboard permissions.</span>'
-                                    : `<strong style="color: var(--info);">💡 Benefits:</strong>
-                                <ul style="color: var(--text-secondary); font-size: 0.9rem; margin: var(--space-2) 0 0 var(--space-4); padding: 0;">
-                                    <li>Backup your data securely</li>
-                                    <li>Merge across multiple devices</li>
-                                    <li>Share data with other users</li>
-                                </ul>`}
+                                <strong style="color: var(--info);">🔒 Required:</strong><span style="color: var(--text-secondary); font-size: 0.9rem;"> Cloud merge is mandatory before you can use the dashboard.</span>
                             </div>
 
                             <div style="display: flex; gap: var(--space-3);">
-                                ${isAdmin ? `<button class="btn btn-secondary" onclick="closeConnectCloudOnLoginModal(false)" style="flex: 1;">
-                                    Skip
-                                </button>` : ''}
                                 <button class="btn btn-primary" onclick="closeConnectCloudOnLoginModal(true)" style="flex: 1;">
                                     ☁️ Connect Now
                                 </button>
@@ -2842,12 +2826,9 @@
 
         // Close connect cloud on login modal
         function closeConnectCloudOnLoginModal(shouldConnect) {
-            // Non-admin users cannot skip - must connect
-            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
-
-            if (!shouldConnect && !isAdmin) {
-                return; // Block skip for non-admin users
+            // All users must connect - cannot skip
+            if (!shouldConnect) {
+                return;
             }
 
             const modal = document.getElementById('connectCloudOnLoginModal');
@@ -2855,27 +2836,21 @@
                 modal.remove();
             }
 
-            if (shouldConnect) {
-                connectToGoogleDrive();
-            }
+            connectToGoogleDrive();
         }
 
-        // Show sync on login modal
+        // Show sync on login modal (mandatory for all users)
         function showSyncOnLoginModal() {
             const existingModal = document.getElementById('syncOnLoginModal');
             if (existingModal) {
                 existingModal.remove();
             }
 
-            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
-
             const modalHTML = `
                 <div id="syncOnLoginModal" class="google-auth-modal" style="display: flex;">
                     <div class="modal-content" style="max-width: 450px;">
                         <div class="modal-header">
-                            <h2>☁️ Merge from Cloud${!isAdmin ? ' (Required)' : '?'}</h2>
-                            ${isAdmin ? '<button class="close-btn" onclick="closeSyncOnLoginModal(false)">×</button>' : ''}
+                            <h2>☁️ Merge from Cloud (Required)</h2>
                         </div>
                         <div style="padding: var(--space-5);">
                             <div style="text-align: center; margin-bottom: var(--space-5);">
@@ -2883,25 +2858,15 @@
                             </div>
 
                             <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-5);">
-                                ${!isAdmin
-                                    ? 'You must merge from the cloud before accessing the dashboard. This ensures you have the latest permissions and data.'
-                                    : 'Your Google Drive is connected. Would you like to merge the latest data from the cloud?'}
+                                You must merge from the cloud before accessing the dashboard. This ensures you have the latest data.
                             </p>
 
                             <div style="background: var(--info-bg); border: 1px solid var(--info-border); border-radius: var(--radius-md); padding: var(--space-3); margin-bottom: var(--space-5);">
-                                ${!isAdmin
-                                    ? '<strong style="color: var(--info);">🔒 Required:</strong><span style="color: var(--text-secondary); font-size: 0.9rem;"> Cloud merge is mandatory to load your dashboard permissions. Your local data will be preserved.</span>'
-                                    : `<strong style="color: var(--info);">💡 Tip:</strong>
-                                <span style="color: var(--text-secondary); font-size: 0.9rem;">
-                                    Merging ensures you have the latest data saved by other users while preserving your local changes.
-                                </span>`}
+                                <strong style="color: var(--info);">🔒 Required:</strong><span style="color: var(--text-secondary); font-size: 0.9rem;"> Cloud merge is mandatory before you can use the dashboard. Your local data will be preserved.</span>
                             </div>
 
                             <div style="display: flex; gap: var(--space-3);">
-                                ${isAdmin ? `<button class="btn btn-secondary" onclick="closeSyncOnLoginModal(false)" style="flex: 1;">
-                                    Skip
-                                </button>` : ''}
-                                <button class="btn btn-primary" onclick="closeSyncOnLoginModal(true)" style="flex: 1;">
+                                <button class="btn btn-primary" id="syncOnLoginMergeBtn" onclick="closeSyncOnLoginModal(true)" style="flex: 1;">
                                     🔀 Merge Now
                                 </button>
                             </div>
@@ -2915,25 +2880,37 @@
 
         // Close sync on login modal
         async function closeSyncOnLoginModal(shouldSync) {
-            // Non-admin users cannot skip - must sync
-            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-            const isAdmin = loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'Administrator');
-
-            if (!shouldSync && !isAdmin) {
-                return; // Block skip for non-admin users
+            // All users must sync - cannot skip
+            if (!shouldSync) {
+                return;
             }
 
-            const modal = document.getElementById('syncOnLoginModal');
-            if (modal) {
-                modal.remove();
+            // Disable button to prevent double-clicks during sync
+            const mergeBtn = document.getElementById('syncOnLoginMergeBtn');
+            if (mergeBtn) {
+                mergeBtn.disabled = true;
+                mergeBtn.textContent = '⏳ Merging...';
             }
 
-            if (shouldSync) {
-                await performAutoSyncOnLogin();
+            const success = await performAutoSyncOnLogin();
+
+            if (success) {
+                // Sync completed - remove modal and allow dashboard access
+                const modal = document.getElementById('syncOnLoginModal');
+                if (modal) {
+                    modal.remove();
+                }
+                sessionStorage.setItem('cloudSyncCompleted', 'true');
+            } else {
+                // Sync failed - re-enable button so user can retry
+                if (mergeBtn) {
+                    mergeBtn.disabled = false;
+                    mergeBtn.textContent = '🔀 Retry Merge';
+                }
             }
         }
 
-        // Perform automatic sync on login
+        // Perform automatic sync on login - returns true on success, false on failure
         async function performAutoSyncOnLogin() {
             // Initialize token if not already done
             const savedToken = localStorage.getItem('schoolDashboardGoogleAccessToken');
@@ -2943,8 +2920,8 @@
             }
 
             if (!isCloudConnected || !googleAccessToken) {
-                showNotification('Could not connect to Google Drive', 'error');
-                return;
+                showNotification('Could not connect to Google Drive. Please try again.', 'error');
+                return false;
             }
 
             setCloudSyncing(true);
@@ -2963,8 +2940,10 @@
 
                 if (!cloudFileId) {
                     setCloudSyncing(false);
-                    showNotification('No backup file found in cloud', 'warning');
-                    return;
+                    // No backup exists in cloud yet - allow through (first-time setup)
+                    showNotification('No cloud backup found — starting fresh. Remember to sync to cloud later.', 'warning');
+                    sessionStorage.setItem('cloudSyncCompleted', 'true');
+                    return true;
                 }
 
                 // Download the file
@@ -3010,20 +2989,24 @@
 
                 const savedByInfo = backupData.savedBy ? ` (saved by ${backupData.savedBy})` : '';
                 showNotification(`Merged from cloud${savedByInfo}`, 'success');
+                return true;
 
             } catch (error) {
                 console.error('Error merging on login:', error);
                 setCloudSyncing(false);
 
                 if (error.message.includes('invalid_token') || error.message.includes('Invalid Credentials')) {
-                    showNotification('Google Drive session expired', 'error');
+                    showNotification('Google Drive session expired. Please reconnect.', 'error');
                     // Clear invalid token
                     localStorage.removeItem('schoolDashboardGoogleAccessToken');
                     localStorage.removeItem('schoolDashboardGoogleTokenExpiry');
                     updateCloudUI(false);
+                    // Show connect modal again since token is expired
+                    setTimeout(() => showConnectCloudOnLoginModal(), 500);
                 } else {
-                    showNotification(`Merge failed: ${error.message}`, 'error');
+                    showNotification(`Merge failed: ${error.message}. Please retry.`, 'error');
                 }
+                return false;
             }
         }
 
@@ -3039,6 +3022,7 @@
             sessionStorage.removeItem('isLoggedIn');
             sessionStorage.removeItem('loggedInUser');
             sessionStorage.removeItem('firstTimeSyncDismissed'); // Reset sync prompt for next login
+            sessionStorage.removeItem('cloudSyncCompleted'); // Require cloud sync again on next login
             checkAuth();
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
@@ -4686,6 +4670,7 @@
                 renderMainLinks();
 
                 setCloudSyncing(false);
+                sessionStorage.setItem('cloudSyncCompleted', 'true');
                 closeForcedSyncModal(true);
 
                 const savedByInfo = backupData.savedBy ? ` (saved by ${backupData.savedBy})` : '';
@@ -4695,7 +4680,7 @@
                 console.error('Error during forced merge:', error);
                 setCloudSyncing(false);
 
-                // Update modal to show error with retry option
+                // Update modal to show error with retry option (no skip - sync is mandatory)
                 if (modal) {
                     const content = modal.querySelector('.modal-content > div:last-child');
                     content.innerHTML = `
@@ -4706,11 +4691,8 @@
                             Merge failed: ${error.message}
                         </p>
                         <div style="display: flex; gap: var(--space-3);">
-                            <button class="btn btn-secondary" onclick="closeForcedSyncModal(false)" style="flex: 1;">
-                                Continue Anyway
-                            </button>
                             <button class="btn btn-primary" onclick="performForcedSyncAfterConnect()" style="flex: 1;">
-                                🔀 Retry
+                                🔀 Retry Merge
                             </button>
                         </div>
                     `;
@@ -4733,7 +4715,8 @@
                 `;
             }
 
-            // Close modal and trigger save
+            // Close modal and trigger save - mark sync as completed
+            sessionStorage.setItem('cloudSyncCompleted', 'true');
             closeForcedSyncModal(false);
             await saveToCloud();
         }
