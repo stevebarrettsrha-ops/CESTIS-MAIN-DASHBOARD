@@ -2733,7 +2733,7 @@
                     <button class="settings-tab" onclick="switchTab('mainLinks')">Main Links</button>
                     <button class="settings-tab" onclick="switchTab('users')">Users</button>
                     <button class="settings-tab" onclick="switchTab('quickLinksApproval')">Quick Links Approval</button>
-                    <button class="settings-tab" onclick="switchTab('cloudStorage')">Cloud Storage</button>
+                    <button class="settings-tab" id="cloudStorageTabBtn" onclick="switchTab('cloudStorage')">Cloud Storage</button>
                 </div>
 
                 <!-- General Tab -->
@@ -4002,6 +4002,13 @@
             render2FAStatus();
             selectedApprovalUser = null;
             renderQuickLinksApprovalTab();
+
+            // Only show Cloud Storage tab for admin users
+            const cloudStorageTabBtn = document.getElementById('cloudStorageTabBtn');
+            const isAdmin = currentUser && (currentUser.isAdmin === true || currentUser.role === 'Administrator');
+            if (cloudStorageTabBtn) {
+                cloudStorageTabBtn.style.display = isAdmin ? '' : 'none';
+            }
         }
 
         function closeSettings() {
@@ -6027,7 +6034,12 @@
 
         // ============================================
         // CLOUD STORAGE TAB - Full Google Drive Storage
+        // Admin-only feature
         // ============================================
+
+        function isCurrentUserAdmin() {
+            return currentUser && (currentUser.isAdmin === true || currentUser.role === 'Administrator');
+        }
 
         // Auto-backup state
         let autoBackupTimer = null;
@@ -6343,6 +6355,10 @@
         // ==========================================
 
         async function createVersionedBackup() {
+            if (!isCurrentUserAdmin()) {
+                showNotification('Only administrators can create backup snapshots', 'error');
+                return;
+            }
             if (!isCloudConnected || !googleAccessToken) {
                 showNotification('Please connect to Google Drive first', 'error');
                 return;
@@ -6500,6 +6516,10 @@
         }
 
         async function restoreVersion(fileId, fileName) {
+            if (!isCurrentUserAdmin()) {
+                showNotification('Only administrators can restore backups', 'error');
+                return;
+            }
             if (!confirm(`🔀 Restore from "${fileName}"?\n\nCloud data will be merged into your local data.\nNo local data will be lost.`)) {
                 return;
             }
@@ -6561,6 +6581,10 @@
         }
 
         async function deleteVersionFile(fileId, fileName) {
+            if (!isCurrentUserAdmin()) {
+                showNotification('Only administrators can delete backup files', 'error');
+                return;
+            }
             if (!confirm(`🗑️ Delete "${fileName}"?\n\nThis cannot be undone.`)) {
                 return;
             }
@@ -6624,6 +6648,10 @@
         }
 
         async function uploadFilesToDrive(files) {
+            if (!isCurrentUserAdmin()) {
+                showNotification('Only administrators can upload files to Drive', 'error');
+                return;
+            }
             if (!isCloudConnected || !googleAccessToken) {
                 showNotification('Please connect to Google Drive first', 'error');
                 return;
@@ -6821,6 +6849,10 @@
         }
 
         async function deleteDriveFile(fileId, fileName) {
+            if (!isCurrentUserAdmin()) {
+                showNotification('Only administrators can delete files from Drive', 'error');
+                return;
+            }
             if (!confirm(`🗑️ Delete "${fileName}" from Google Drive?\n\nThis cannot be undone.`)) {
                 return;
             }
@@ -6885,8 +6917,12 @@
             return 'other';
         }
 
-        // Load Cloud Storage tab data when tab is switched to
+        // Load Cloud Storage tab data when tab is switched to (admin only)
         function onCloudStorageTabActivated() {
+            if (!isCurrentUserAdmin()) {
+                showNotification('Cloud Storage is only available to administrators', 'error');
+                return;
+            }
             updateCloudStorageTabUI();
             if (isCloudConnected) {
                 refreshStorageDashboard();
