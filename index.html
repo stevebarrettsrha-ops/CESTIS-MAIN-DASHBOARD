@@ -13,6 +13,8 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- EmailJS SDK for sending OTP emails -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- Jitsi Meet External API for video conferencing -->
+    <script src="https://meet.jit.si/external_api.js"></script>
     <script>
         // Initialize EmailJS with public key
         (function() {
@@ -2462,6 +2464,424 @@
             color: var(--text-secondary);
             margin-bottom: var(--space-5);
         }
+
+        /* ==========================================
+           VIDEO CONFERENCE STYLES
+           ========================================== */
+
+        .video-conf-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .conf-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .conf-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .conf-card:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .conf-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .conf-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .conf-card-icon.start { background: #dbeafe; color: #2563eb; }
+        .conf-card-icon.join { background: #dcfce7; color: #16a34a; }
+
+        .conf-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .conf-card-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+
+        .conf-btn {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .conf-btn.primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .conf-btn.primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .conf-btn.success {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .conf-btn.success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .conf-btn.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .conf-btn.danger:hover {
+            background: var(--danger-dark);
+        }
+
+        .conf-btn.secondary {
+            background: var(--gray-100);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .conf-btn.secondary:hover {
+            background: var(--border);
+        }
+
+        .conf-join-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            transition: border-color 0.2s;
+            font-family: var(--font-mono);
+        }
+
+        .conf-join-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .conf-join-input::placeholder {
+            letter-spacing: 1px;
+            text-transform: none;
+            font-weight: 400;
+            font-size: 0.95rem;
+        }
+
+        /* Rejoin Banner */
+        .conf-rejoin-banner {
+            background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%);
+            border: 2px solid #93c5fd;
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .conf-rejoin-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .conf-rejoin-info .icon {
+            font-size: 1.5rem;
+        }
+
+        .conf-rejoin-info .text strong {
+            display: block;
+            font-size: 1rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .conf-rejoin-info .text span {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .conf-rejoin-code {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 1.1rem;
+            background: white;
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            letter-spacing: 2px;
+            border: 1px solid var(--border);
+        }
+
+        .conf-rejoin-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .conf-rejoin-actions .conf-btn {
+            width: auto;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        /* Full-screen Conference Modal */
+        .conf-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .conf-modal-overlay.active {
+            display: flex;
+        }
+
+        .conf-topbar {
+            background: #1e293b;
+            color: white;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .conf-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .conf-topbar-code {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .conf-topbar-code label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .conf-topbar-code .code-value {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .conf-topbar-code .code-value:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .conf-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .conf-topbar-btn {
+            padding: 0.4rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .conf-topbar-btn.record {
+            background: #dc2626;
+        }
+
+        .conf-topbar-btn.record:hover {
+            background: #b91c1c;
+        }
+
+        .conf-topbar-btn.record.recording {
+            animation: recording-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes recording-pulse {
+            0%, 100% { background: #dc2626; }
+            50% { background: #991b1b; }
+        }
+
+        .conf-topbar-btn.stop-record {
+            background: #f59e0b;
+        }
+
+        .conf-topbar-btn.stop-record:hover {
+            background: #d97706;
+        }
+
+        .conf-topbar-btn.end-all {
+            background: #dc2626;
+        }
+
+        .conf-topbar-btn.end-all:hover {
+            background: #991b1b;
+        }
+
+        .conf-topbar-btn.leave {
+            background: #6b7280;
+        }
+
+        .conf-topbar-btn.leave:hover {
+            background: #4b5563;
+        }
+
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: #fca5a5;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .recording-dot {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: recording-blink 1s ease-in-out infinite;
+        }
+
+        @keyframes recording-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        #jitsiContainer {
+            flex: 1;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #jitsiContainer iframe {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Conference code display after starting */
+        .conf-code-display {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f0f9ff;
+            border-radius: 12px;
+            border: 2px dashed #93c5fd;
+            margin-bottom: 1rem;
+        }
+
+        .conf-code-display label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .conf-code-display .code {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 5px;
+        }
+
+        .conf-code-display .copy-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.4rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .conf-cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .conf-topbar {
+                flex-wrap: wrap;
+                padding: 0.5rem;
+            }
+
+            .conf-topbar-right {
+                flex-wrap: wrap;
+            }
+
+            .conf-rejoin-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .conf-rejoin-actions {
+                width: 100%;
+            }
+
+            .conf-rejoin-actions .conf-btn {
+                flex: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2711,6 +3131,57 @@
                 <!-- Main links will be populated here -->
             </div>
         </section>
+
+        <!-- Video Conference Section -->
+        <section class="video-conf-section">
+            <h2 class="section-title">Video Conference</h2>
+
+            <!-- Rejoin Banner (shown when instructor has an active conference) -->
+            <div class="conf-rejoin-banner" id="confRejoinBanner" style="display: none;">
+                <div class="conf-rejoin-info">
+                    <span class="icon">📹</span>
+                    <div class="text">
+                        <strong>You have an active conference</strong>
+                        <span>Code: <span class="conf-rejoin-code" id="rejoinCodeDisplay"></span></span>
+                    </div>
+                </div>
+                <div class="conf-rejoin-actions">
+                    <button class="conf-btn primary" onclick="rejoinConference()">Rejoin Meeting</button>
+                    <button class="conf-btn danger" onclick="endConferenceForAll()">End for All</button>
+                </div>
+            </div>
+
+            <div class="conf-cards-grid">
+                <!-- Start Conference Card (Admin/Instructor only) -->
+                <div class="conf-card" id="confStartCard">
+                    <div class="conf-card-header">
+                        <div class="conf-card-icon start">📹</div>
+                        <div class="conf-card-title">Start a Conference</div>
+                    </div>
+                    <div class="conf-card-desc">
+                        Create a new video conference and get a code to share with participants. You can leave and rejoin using the same code.
+                    </div>
+                    <button class="conf-btn primary" onclick="startConference()">
+                        <span>📹</span> Start New Conference
+                    </button>
+                </div>
+
+                <!-- Join Conference Card (All users) -->
+                <div class="conf-card">
+                    <div class="conf-card-header">
+                        <div class="conf-card-icon join">🔗</div>
+                        <div class="conf-card-title">Join a Conference</div>
+                    </div>
+                    <div class="conf-card-desc">
+                        Enter the conference code provided by your instructor to join an active meeting.
+                    </div>
+                    <input type="text" class="conf-join-input" id="confJoinCodeInput" placeholder="Enter code (e.g. ABC123)" maxlength="6">
+                    <button class="conf-btn success" onclick="joinConference()">
+                        <span>🔗</span> Join Conference
+                    </button>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Footer -->
@@ -2718,6 +3189,40 @@
         <p>© <span id="year"></span> School Dashboard. All rights reserved.</p>
     </footer>
     </div><!-- End Dashboard Container -->
+
+    <!-- Full-Screen Video Conference Modal -->
+    <div class="conf-modal-overlay" id="confModalOverlay">
+        <div class="conf-topbar">
+            <div class="conf-topbar-left">
+                <div class="conf-topbar-code">
+                    <label>Code:</label>
+                    <span class="code-value" id="confTopbarCode" title="Click to copy" onclick="copyConferenceCode()">------</span>
+                </div>
+                <div class="recording-indicator" id="recordingIndicator" style="display: none;">
+                    <span class="recording-dot"></span>
+                    <span>Recording</span>
+                </div>
+            </div>
+            <div class="conf-topbar-right">
+                <!-- Recording buttons (instructor only) -->
+                <button class="conf-topbar-btn record" id="btnStartRecording" onclick="startConferenceRecording()" title="Start Recording">
+                    <span>⏺</span> Record
+                </button>
+                <button class="conf-topbar-btn stop-record" id="btnStopRecording" onclick="stopConferenceRecording()" style="display: none;" title="Stop Recording">
+                    <span>⏹</span> Stop
+                </button>
+                <!-- End for all (instructor only) -->
+                <button class="conf-topbar-btn end-all" id="btnEndForAll" onclick="endConferenceForAll()" title="End meeting for all participants">
+                    <span>📛</span> End for All
+                </button>
+                <!-- Leave button -->
+                <button class="conf-topbar-btn leave" onclick="leaveConference()" title="Leave the meeting (meeting stays active)">
+                    <span>🚪</span> Leave
+                </button>
+            </div>
+        </div>
+        <div id="jitsiContainer"></div>
+    </div>
 
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settingsModal">
@@ -3335,6 +3840,7 @@
             document.getElementById('loginBackupCode').value = '';
 
             checkAuth();
+            checkActiveConference();
             showNotification('Welcome, ' + user.displayName + '!');
 
             // Check if Google Drive is connected and prompt for sync
@@ -3876,6 +4382,9 @@
 
             // Initialize Cloud Storage tab (auto-backup, etc.)
             initCloudStorageTab();
+
+            // Initialize Video Conference UI
+            initConferenceUI();
 
             // Initialize Google Auth after a short delay to ensure GIS library is loaded
             setTimeout(() => {
@@ -7433,6 +7942,501 @@
                 console.error('Error performing selective merge:', error);
                 setCloudSyncing(false);
                 alert(`❌ Failed to merge data: ${error.message}`);
+            }
+        }
+
+        // ============================================
+        // VIDEO CONFERENCE FUNCTIONALITY
+        // ============================================
+
+        // Google Drive folder for conference recordings
+        const CONFERENCE_RECORDINGS_FOLDER_ID = '1Yp9aLXGGjhojF1J04QxoNG-9yEgaiS-A';
+
+        // Conference state
+        let jitsiApi = null;
+        let conferenceRecorder = null;
+        let recordedChunks = [];
+        let recordingStream = null;
+        let isConferenceCreator = false;
+
+        // Generate a random 6-character alphanumeric conference code
+        function generateConferenceCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars: I,O,0,1
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Get the active conference from localStorage
+        function getActiveConference() {
+            const data = localStorage.getItem('activeConference');
+            if (!data) return null;
+            try {
+                return JSON.parse(data);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Save the active conference to localStorage
+        function saveActiveConference(conf) {
+            localStorage.setItem('activeConference', JSON.stringify(conf));
+        }
+
+        // Clear the active conference from localStorage
+        function clearActiveConference() {
+            localStorage.removeItem('activeConference');
+        }
+
+        // Check for an active conference and show rejoin banner if needed
+        function checkActiveConference() {
+            const conf = getActiveConference();
+            const banner = document.getElementById('confRejoinBanner');
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+
+            if (conf && loggedInUser && conf.createdBy.toLowerCase() === loggedInUser.username.toLowerCase()) {
+                // This instructor has an active conference
+                document.getElementById('rejoinCodeDisplay').textContent = conf.code;
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+
+            // Show/hide the "Start Conference" card based on user role
+            const startCard = document.getElementById('confStartCard');
+            if (startCard && loggedInUser) {
+                startCard.style.display = (loggedInUser.role === 'Administrator') ? 'block' : 'none';
+            }
+        }
+
+        // Start a new conference (instructor/admin only)
+        function startConference() {
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            if (!loggedInUser || loggedInUser.role !== 'Administrator') {
+                showNotification('Only administrators/instructors can start conferences.', 'error');
+                return;
+            }
+
+            // Check if there's already an active conference for this user
+            const existing = getActiveConference();
+            if (existing && existing.createdBy.toLowerCase() === loggedInUser.username.toLowerCase()) {
+                if (confirm('You already have an active conference (Code: ' + existing.code + '). Do you want to rejoin it instead?\n\nClick OK to rejoin, or Cancel to start a new one.')) {
+                    rejoinConference();
+                    return;
+                }
+                // User wants a new conference - clear the old one
+                clearActiveConference();
+            }
+
+            const code = generateConferenceCode();
+            const conf = {
+                code: code,
+                roomName: 'cestis-conf-' + code.toLowerCase(),
+                createdBy: loggedInUser.username,
+                createdAt: new Date().toISOString(),
+                isActive: true
+            };
+
+            saveActiveConference(conf);
+            isConferenceCreator = true;
+            openJitsiMeeting(conf, loggedInUser.displayName, true);
+        }
+
+        // Join an existing conference with a code
+        function joinConference() {
+            const codeInput = document.getElementById('confJoinCodeInput');
+            const code = codeInput.value.trim().toUpperCase();
+
+            if (!code || code.length < 4) {
+                showNotification('Please enter a valid conference code.', 'error');
+                codeInput.focus();
+                return;
+            }
+
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            if (!loggedInUser) {
+                showNotification('You must be logged in to join a conference.', 'error');
+                return;
+            }
+
+            const conf = {
+                code: code,
+                roomName: 'cestis-conf-' + code.toLowerCase(),
+                createdBy: null,
+                joinedAt: new Date().toISOString()
+            };
+
+            isConferenceCreator = false;
+            codeInput.value = '';
+            openJitsiMeeting(conf, loggedInUser.displayName, false);
+        }
+
+        // Rejoin the active conference
+        function rejoinConference() {
+            const conf = getActiveConference();
+            if (!conf) {
+                showNotification('No active conference found.', 'error');
+                checkActiveConference();
+                return;
+            }
+
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+            if (!loggedInUser) {
+                showNotification('You must be logged in to rejoin.', 'error');
+                return;
+            }
+
+            isConferenceCreator = (conf.createdBy.toLowerCase() === loggedInUser.username.toLowerCase());
+            openJitsiMeeting(conf, loggedInUser.displayName, isConferenceCreator);
+        }
+
+        // Open the Jitsi meeting in the full-screen modal
+        function openJitsiMeeting(conf, displayName, isModerator) {
+            const overlay = document.getElementById('confModalOverlay');
+            const container = document.getElementById('jitsiContainer');
+
+            // Update topbar
+            document.getElementById('confTopbarCode').textContent = conf.code;
+
+            // Show/hide moderator-only buttons
+            const showModeratorControls = isModerator ? 'inline-flex' : 'none';
+            document.getElementById('btnStartRecording').style.display = showModeratorControls;
+            document.getElementById('btnEndForAll').style.display = showModeratorControls;
+
+            // Ensure stop recording is hidden initially
+            document.getElementById('btnStopRecording').style.display = 'none';
+            document.getElementById('recordingIndicator').style.display = 'none';
+
+            // Show overlay
+            overlay.classList.add('active');
+
+            // Destroy any existing Jitsi instance
+            if (jitsiApi) {
+                jitsiApi.dispose();
+                jitsiApi = null;
+            }
+
+            // Clear the container
+            container.innerHTML = '';
+
+            // Create Jitsi meeting
+            try {
+                const options = {
+                    roomName: conf.roomName,
+                    parentNode: container,
+                    userInfo: {
+                        displayName: displayName
+                    },
+                    configOverwrite: {
+                        startWithAudioMuted: false,
+                        startWithVideoMuted: false,
+                        prejoinPageEnabled: false,
+                        disableDeepLinking: true,
+                        disableInviteFunctions: true
+                    },
+                    interfaceConfigOverwrite: {
+                        TOOLBAR_BUTTONS: [
+                            'microphone', 'camera', 'desktop', 'chat',
+                            'raisehand', 'participants-pane', 'tileview',
+                            'select-background', 'fullscreen', 'settings'
+                        ],
+                        SHOW_JITSI_WATERMARK: false,
+                        SHOW_WATERMARK_FOR_GUESTS: false,
+                        DEFAULT_REMOTE_DISPLAY_NAME: 'Participant',
+                        DISABLE_JOIN_LEAVE_NOTIFICATIONS: false
+                    }
+                };
+
+                jitsiApi = new JitsiMeetExternalAPI('meet.jit.si', options);
+
+                // Listen for conference events
+                jitsiApi.addListener('readyToClose', function() {
+                    // The Jitsi iframe wants to close (user clicked hangup in Jitsi UI)
+                    leaveConference();
+                });
+
+                jitsiApi.addListener('videoConferenceLeft', function() {
+                    // Conference ended (could be "end for all" or user left)
+                    if (!isConferenceCreator) {
+                        closeConferenceModal();
+                    }
+                });
+
+            } catch (error) {
+                console.error('Failed to start Jitsi meeting:', error);
+                showNotification('Failed to start video conference. Please check your connection.', 'error');
+                overlay.classList.remove('active');
+            }
+        }
+
+        // Leave the conference (go back to dashboard, meeting stays active)
+        function leaveConference() {
+            // Stop recording if active
+            if (conferenceRecorder && conferenceRecorder.state === 'recording') {
+                stopConferenceRecording();
+            }
+
+            closeConferenceModal();
+
+            if (isConferenceCreator) {
+                showNotification('You left the conference. You can rejoin using the banner on the dashboard.', 'info');
+            }
+
+            checkActiveConference();
+        }
+
+        // End the conference for all participants
+        function endConferenceForAll() {
+            const conf = getActiveConference();
+            if (!conf) {
+                showNotification('No active conference to end.', 'warning');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to end this meeting for ALL participants?\n\nConference Code: ' + conf.code + '\n\nThis action cannot be undone.')) {
+                return;
+            }
+
+            // Stop recording if active
+            if (conferenceRecorder && conferenceRecorder.state === 'recording') {
+                stopConferenceRecording();
+            }
+
+            // End the conference in Jitsi (kicks all participants)
+            if (jitsiApi) {
+                try {
+                    jitsiApi.executeCommand('endConference');
+                } catch (e) {
+                    console.warn('Could not execute endConference command:', e);
+                    // Fallback: just hang up and dispose
+                    try {
+                        jitsiApi.executeCommand('hangup');
+                    } catch (e2) {
+                        console.warn('Could not execute hangup:', e2);
+                    }
+                }
+            }
+
+            // Clear the active conference
+            clearActiveConference();
+            closeConferenceModal();
+
+            showNotification('Conference ended for all participants.', 'success');
+            checkActiveConference();
+        }
+
+        // Close the conference modal and clean up Jitsi
+        function closeConferenceModal() {
+            const overlay = document.getElementById('confModalOverlay');
+            overlay.classList.remove('active');
+
+            if (jitsiApi) {
+                try {
+                    jitsiApi.dispose();
+                } catch (e) {
+                    console.warn('Error disposing Jitsi API:', e);
+                }
+                jitsiApi = null;
+            }
+        }
+
+        // Copy conference code to clipboard
+        function copyConferenceCode() {
+            const code = document.getElementById('confTopbarCode').textContent;
+            if (code && code !== '------') {
+                navigator.clipboard.writeText(code).then(() => {
+                    showNotification('Conference code copied: ' + code, 'success');
+                }).catch(() => {
+                    // Fallback
+                    prompt('Copy this conference code:', code);
+                });
+            }
+        }
+
+        // ============================================
+        // CONFERENCE RECORDING
+        // ============================================
+
+        // Start recording the conference
+        async function startConferenceRecording() {
+            try {
+                // Request screen/tab capture
+                recordingStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { mediaSource: 'screen', cursor: 'always' },
+                    audio: true
+                });
+
+                recordedChunks = [];
+
+                // Determine supported MIME type
+                let mimeType = 'video/webm;codecs=vp9,opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm;codecs=vp8,opus';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+
+                conferenceRecorder = new MediaRecorder(recordingStream, { mimeType: mimeType });
+
+                conferenceRecorder.ondataavailable = function(event) {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                conferenceRecorder.onstop = function() {
+                    handleRecordingStopped();
+                };
+
+                // Handle when user stops screen sharing via browser UI
+                recordingStream.getVideoTracks()[0].addEventListener('ended', function() {
+                    if (conferenceRecorder && conferenceRecorder.state === 'recording') {
+                        conferenceRecorder.stop();
+                    }
+                });
+
+                conferenceRecorder.start(1000); // Collect data every second
+
+                // Update UI
+                document.getElementById('btnStartRecording').style.display = 'none';
+                document.getElementById('btnStopRecording').style.display = 'inline-flex';
+                document.getElementById('recordingIndicator').style.display = 'flex';
+
+                showNotification('Recording started. Select the tab or screen to capture.', 'info');
+
+            } catch (error) {
+                console.error('Failed to start recording:', error);
+                if (error.name === 'NotAllowedError') {
+                    showNotification('Recording cancelled - screen sharing permission denied.', 'warning');
+                } else {
+                    showNotification('Failed to start recording: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Stop recording
+        function stopConferenceRecording() {
+            if (conferenceRecorder && conferenceRecorder.state === 'recording') {
+                conferenceRecorder.stop();
+            }
+
+            // Stop all tracks
+            if (recordingStream) {
+                recordingStream.getTracks().forEach(track => track.stop());
+                recordingStream = null;
+            }
+
+            // Update UI
+            document.getElementById('btnStartRecording').style.display = 'inline-flex';
+            document.getElementById('btnStopRecording').style.display = 'none';
+            document.getElementById('recordingIndicator').style.display = 'none';
+        }
+
+        // Handle recording data after stop
+        function handleRecordingStopped() {
+            if (recordedChunks.length === 0) {
+                showNotification('No recording data captured.', 'warning');
+                return;
+            }
+
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            recordedChunks = [];
+
+            // Generate filename with timestamp
+            const conf = getActiveConference();
+            const code = conf ? conf.code : 'unknown';
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const fileName = 'Conference_' + code + '_' + timestamp + '.webm';
+
+            const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(1);
+
+            showNotification('Recording stopped (' + fileSizeMB + ' MB). Saving to Google Drive...', 'info');
+
+            // Upload to Google Drive
+            uploadRecordingToDrive(blob, fileName);
+        }
+
+        // Upload the recording blob to Google Drive
+        async function uploadRecordingToDrive(blob, fileName) {
+            // Check if we have a valid Google Drive token
+            const token = localStorage.getItem('schoolDashboardGoogleAccessToken');
+            const expiry = localStorage.getItem('schoolDashboardGoogleTokenExpiry');
+
+            if (!token || !expiry || new Date(expiry) <= new Date()) {
+                showNotification('Google Drive not connected. Downloading recording locally instead.', 'warning');
+                downloadRecordingLocally(blob, fileName);
+                return;
+            }
+
+            try {
+                // Create multipart upload for Google Drive
+                const metadata = {
+                    name: fileName,
+                    parents: [CONFERENCE_RECORDINGS_FOLDER_ID],
+                    mimeType: 'video/webm'
+                };
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', blob);
+
+                const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: form
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || 'Upload failed with status ' + response.status);
+                }
+
+                const result = await response.json();
+                console.log('Recording uploaded to Google Drive:', result);
+                showNotification('Recording saved to Google Drive: ' + fileName, 'success');
+
+            } catch (error) {
+                console.error('Failed to upload recording to Google Drive:', error);
+                showNotification('Failed to upload to Google Drive. Downloading locally instead.', 'error');
+                downloadRecordingLocally(blob, fileName);
+            }
+        }
+
+        // Fallback: download recording locally if Google Drive upload fails
+        function downloadRecordingLocally(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('Recording downloaded: ' + fileName, 'success');
+        }
+
+        // Initialize conference UI on page load
+        function initConferenceUI() {
+            checkActiveConference();
+
+            // Add Enter key listener for join code input
+            const joinInput = document.getElementById('confJoinCodeInput');
+            if (joinInput) {
+                joinInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        joinConference();
+                    }
+                });
+                // Auto-uppercase as user types
+                joinInput.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                });
             }
         }
     </script>
