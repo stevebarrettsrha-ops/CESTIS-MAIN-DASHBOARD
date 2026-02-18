@@ -3141,7 +3141,7 @@
                 <div class="conf-rejoin-info">
                     <span class="icon">📹</span>
                     <div class="text">
-                        <strong>You have an active conference</strong>
+                        <strong>You have an active conference — <span id="rejoinClassDisplay"></span></strong>
                         <span>Code: <span class="conf-rejoin-code" id="rejoinCodeDisplay"></span></span>
                     </div>
                 </div>
@@ -3161,6 +3161,7 @@
                     <div class="conf-card-desc">
                         Create a new video conference and get a code to share with participants. You can leave and rejoin using the same code.
                     </div>
+                    <input type="text" class="conf-join-input" id="confClassNameInput" placeholder="Enter class name (e.g. Math 101)" maxlength="50" style="letter-spacing: normal; text-transform: none; font-weight: 500; font-family: 'Inter', sans-serif;">
                     <button class="conf-btn primary" onclick="startConference()">
                         <span>📹</span> Start New Conference
                     </button>
@@ -7999,6 +8000,7 @@
             if (conf && loggedInUser && conf.createdBy.toLowerCase() === loggedInUser.username.toLowerCase()) {
                 // This instructor has an active conference
                 document.getElementById('rejoinCodeDisplay').textContent = conf.code;
+                document.getElementById('rejoinClassDisplay').textContent = conf.className || '';
                 banner.style.display = 'flex';
             } else {
                 banner.style.display = 'none';
@@ -8030,10 +8032,20 @@
                 clearActiveConference();
             }
 
+            // Get class name
+            const classNameInput = document.getElementById('confClassNameInput');
+            const className = classNameInput ? classNameInput.value.trim() : '';
+            if (!className) {
+                showNotification('Please enter a class name before starting the conference.', 'error');
+                if (classNameInput) classNameInput.focus();
+                return;
+            }
+
             const code = generateConferenceCode();
             const conf = {
                 code: code,
                 roomName: 'cestis-conf-' + code.toLowerCase(),
+                className: className,
                 createdBy: loggedInUser.username,
                 createdAt: new Date().toISOString(),
                 isActive: true
@@ -8041,6 +8053,7 @@
 
             saveActiveConference(conf);
             isConferenceCreator = true;
+            if (classNameInput) classNameInput.value = '';
             openJitsiMeeting(conf, loggedInUser.displayName, true);
         }
 
@@ -8345,11 +8358,12 @@
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             recordedChunks = [];
 
-            // Generate filename with timestamp
+            // Generate filename with class name and timestamp
             const conf = getActiveConference();
             const code = conf ? conf.code : 'unknown';
+            const className = conf && conf.className ? conf.className.replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, '-') : 'NoClass';
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            const fileName = 'Conference_' + code + '_' + timestamp + '.webm';
+            const fileName = 'Conference_' + className + '_' + code + '_' + timestamp + '.webm';
 
             const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(1);
 
