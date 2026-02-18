@@ -122,8 +122,8 @@
         }
 
         .logo-container {
-            width: 70px;
-            height: 70px;
+            width: 192px;
+            height: 192px;
             background: white;
             border-radius: 12px;
             display: flex;
@@ -131,16 +131,17 @@
             justify-content: center;
             overflow: hidden;
             box-shadow: var(--shadow);
+            flex-shrink: 0;
         }
 
         .logo-container img {
-            max-width: 100%;
-            max-height: 100%;
+            width: 192px;
+            height: 192px;
             object-fit: contain;
         }
 
         .logo-placeholder {
-            font-size: 2rem;
+            font-size: 4rem;
             color: var(--primary);
         }
 
@@ -2732,7 +2733,7 @@
                     <button class="settings-tab" onclick="switchTab('quickLinks')">Quick Links</button>
                     <button class="settings-tab" onclick="switchTab('mainLinks')">Main Links</button>
                     <button class="settings-tab" onclick="switchTab('users')">Users</button>
-                    <button class="settings-tab" onclick="switchTab('quickLinksApproval')">Quick Links Approval</button>
+                    <button class="settings-tab" onclick="switchTab('quickLinksApproval')">Approvals</button>
                     <button class="settings-tab" id="cloudStorageTabBtn" onclick="switchTab('cloudStorage')">Cloud Storage</button>
                 </div>
 
@@ -3100,10 +3101,13 @@
                 }
 
                 // Show/hide settings based on user role
+                const cloudSyncContainer = document.getElementById('cloudSyncContainer');
                 if (loggedInUser && loggedInUser.role === 'Administrator') {
                     settingsBtn.classList.remove('hidden');
+                    if (cloudSyncContainer) cloudSyncContainer.style.display = '';
                 } else {
                     settingsBtn.classList.add('hidden');
+                    if (cloudSyncContainer) cloudSyncContainer.style.display = 'none';
                 }
             } else {
                 loginPage.classList.remove('hidden');
@@ -3257,6 +3261,10 @@
                 if (backup.data.quickLinkApprovals) {
                     quickLinkApprovals = backup.data.quickLinkApprovals;
                     localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
+                }
+                if (backup.data.mainLinkApprovals) {
+                    mainLinkApprovals = backup.data.mainLinkApprovals;
+                    localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
                 }
 
                 // Update sync tracking
@@ -3699,7 +3707,8 @@
                     return;
                 }
                 const initials = user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                const userApprovals = quickLinkApprovals[user.username] || {};
+                const userQuickApprovals = quickLinkApprovals[user.username] || {};
+                const userMainApprovals = mainLinkApprovals[user.username] || {};
 
                 container.innerHTML = `
                     <button class="approval-back-btn" onclick="selectedApprovalUser=null;renderQuickLinksApprovalTab();">
@@ -3716,9 +3725,11 @@
                         <button class="approval-bulk-btn approve-all" onclick="bulkApproval('${escapeHtml(user.username)}', true)">Approve All</button>
                         <button class="approval-bulk-btn disapprove-all" onclick="bulkApproval('${escapeHtml(user.username)}', false)">Disapprove All</button>
                     </div>
+
+                    <h4 style="margin: 1.25rem 0 0.75rem 0; font-size: 0.95rem; color: var(--text);">Quick Links</h4>
                     <div class="approval-links-list">
                         ${quickLinks.map((link, index) => {
-                            const isApproved = userApprovals[link.name] !== false;
+                            const isApproved = userQuickApprovals[link.name] !== false;
                             return `
                             <div class="approval-link-item">
                                 <div class="approval-link-info">
@@ -3740,6 +3751,32 @@
                             </div>`;
                         }).join('')}
                     </div>
+
+                    <h4 style="margin: 1.5rem 0 0.75rem 0; font-size: 0.95rem; color: var(--text);">Main Resources</h4>
+                    <div class="approval-links-list">
+                        ${mainLinks.map((link, index) => {
+                            const isApproved = userMainApprovals[link.name] !== false;
+                            return `
+                            <div class="approval-link-item">
+                                <div class="approval-link-info">
+                                    <span class="approval-link-icon">${link.icon || '🔗'}</span>
+                                    <div>
+                                        <div class="approval-link-name">${escapeHtml(link.name)}</div>
+                                        <div class="approval-link-url">${escapeHtml(link.url)}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;align-items:center;">
+                                    <span class="approval-status-label ${isApproved ? 'approved' : 'disapproved'}" id="mainApprovalLabel_${index}">
+                                        ${isApproved ? 'Approved' : 'Disapproved'}
+                                    </span>
+                                    <label class="approval-toggle">
+                                        <input type="checkbox" ${isApproved ? 'checked' : ''} onchange="toggleMainLinkApproval('${escapeHtml(user.username)}', ${index}, this.checked)">
+                                        <span class="approval-toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
                 `;
             } else {
                 // Show user cards grid
@@ -3748,7 +3785,7 @@
                         <div class="approval-no-users">
                             <span>👥</span>
                             <p>No users created yet.</p>
-                            <p style="font-size: 0.85rem;">Add users in the "Users" tab to manage their quick link access.</p>
+                            <p style="font-size: 0.85rem;">Add users in the "Users" tab to manage their access.</p>
                         </div>
                     `;
                     return;
@@ -3756,20 +3793,24 @@
 
                 container.innerHTML = `
                     <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-                        Select a user to manage which quick links they can access on the dashboard.
+                        Select a user to manage which quick links and main resources they can access on the dashboard.
                     </p>
                     <div class="approval-users-grid">
                         ${nonAdminUsers.map(user => {
                             const initials = user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                            const userApprovals = quickLinkApprovals[user.username] || {};
-                            const approvedCount = quickLinks.filter(link => userApprovals[link.name] !== false).length;
+                            const userQuickApprovals = quickLinkApprovals[user.username] || {};
+                            const userMainApprovals = mainLinkApprovals[user.username] || {};
+                            const quickApprovedCount = quickLinks.filter(link => userQuickApprovals[link.name] !== false).length;
+                            const mainApprovedCount = mainLinks.filter(link => userMainApprovals[link.name] !== false).length;
+                            const totalApproved = quickApprovedCount + mainApprovedCount;
+                            const totalLinks = quickLinks.length + mainLinks.length;
                             return `
                             <div class="approval-user-card" onclick="selectUserForApproval('${escapeHtml(user.username)}')">
                                 <div class="approval-user-avatar">${initials}</div>
                                 <div class="approval-user-name">${escapeHtml(user.displayName)}</div>
                                 <div class="approval-user-role">${escapeHtml(user.role)}</div>
                                 <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
-                                    ${approvedCount}/${quickLinks.length} links approved
+                                    ${totalApproved}/${totalLinks} links approved
                                 </div>
                             </div>`;
                         }).join('')}
@@ -3799,12 +3840,34 @@
             }
         }
 
+        function toggleMainLinkApproval(username, linkIndex, isApproved) {
+            const linkName = mainLinks[linkIndex].name;
+
+            if (!mainLinkApprovals[username]) {
+                mainLinkApprovals[username] = {};
+            }
+            mainLinkApprovals[username][linkName] = isApproved;
+
+            // Update the label text and class
+            const label = document.getElementById('mainApprovalLabel_' + linkIndex);
+            if (label) {
+                label.textContent = isApproved ? 'Approved' : 'Disapproved';
+                label.className = 'approval-status-label ' + (isApproved ? 'approved' : 'disapproved');
+            }
+        }
+
         function bulkApproval(username, approve) {
             if (!quickLinkApprovals[username]) {
                 quickLinkApprovals[username] = {};
             }
             quickLinks.forEach(link => {
                 quickLinkApprovals[username][link.name] = approve;
+            });
+            if (!mainLinkApprovals[username]) {
+                mainLinkApprovals[username] = {};
+            }
+            mainLinks.forEach(link => {
+                mainLinkApprovals[username][link.name] = approve;
             });
             renderQuickLinksApprovalTab();
         }
@@ -3815,6 +3878,18 @@
                 return true;
             }
             const userApprovals = quickLinkApprovals[user.username];
+            if (!userApprovals) {
+                return true; // No approvals set = all approved by default
+            }
+            return userApprovals[linkName] !== false;
+        }
+
+        function isMainLinkApprovedForUser(linkName, user) {
+            // Admin always sees all links
+            if (!user || user.isAdmin || user.role === 'Administrator') {
+                return true;
+            }
+            const userApprovals = mainLinkApprovals[user.username];
             if (!userApprovals) {
                 return true; // No approvals set = all approved by default
             }
@@ -3855,6 +3930,10 @@
         // If a user has no entry, all links are approved by default
         // Admin users always see all links regardless of approvals
         let quickLinkApprovals = JSON.parse(localStorage.getItem('quickLinkApprovals')) || {};
+
+        // Main Link Approvals: { "username": { "linkName": true/false } }
+        // Same logic as quick link approvals but for main resources
+        let mainLinkApprovals = JSON.parse(localStorage.getItem('mainLinkApprovals')) || {};
 
         // Icons for new links
         const quickIcons = ['📱', '💻', '📝', '🔔', '📋', '🎯', '💡', '🔍', '📌', '⭐'];
@@ -3943,7 +4022,12 @@
         // Render Main Links
         function renderMainLinks() {
             const grid = document.getElementById('mainLinksGrid');
-            grid.innerHTML = mainLinks.map((link, index) => {
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+
+            // Filter main links based on approvals for non-admin users
+            const visibleLinks = mainLinks.filter(link => isMainLinkApprovedForUser(link.name, loggedInUser));
+
+            grid.innerHTML = visibleLinks.map((link, index) => {
                 const hasValidUrl = link.url && link.url !== '#' && link.url.trim() !== '';
                 const href = hasValidUrl ? link.url : 'javascript:void(0)';
                 const target = hasValidUrl ? 'target="_blank"' : '';
@@ -4139,6 +4223,7 @@
             localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
             localStorage.setItem('dashboardUsers', JSON.stringify(users));
             localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
+            localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
 
             // Update display
             loadSchoolSettings();
@@ -5477,6 +5562,10 @@
                     quickLinkApprovals = mergeApprovals(quickLinkApprovals, backup.data.quickLinkApprovals);
                     localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
                 }
+                if (backup.data.mainLinkApprovals) {
+                    mainLinkApprovals = mergeApprovals(mainLinkApprovals, backup.data.mainLinkApprovals);
+                    localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
+                }
 
                 // Update last sync info
                 lastSyncTime = new Date();
@@ -5765,6 +5854,11 @@
                 mergedCounts.approvals = true;
                 localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
             }
+            if (backupData.data.mainLinkApprovals) {
+                mainLinkApprovals = mergeApprovals(mainLinkApprovals, backupData.data.mainLinkApprovals);
+                mergedCounts.approvals = true;
+                localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
+            }
 
             return mergedCounts;
         }
@@ -5779,13 +5873,15 @@
                 mergedData.mainLinks = mergeArrayByKey(cloudBackupData.data.mainLinks, mainLinks, linkKey);
                 mergedData.schoolSettings = mergeSettings(cloudBackupData.data.schoolSettings, schoolSettings);
                 mergedData.quickLinkApprovals = mergeApprovals(cloudBackupData.data.quickLinkApprovals, quickLinkApprovals);
+                mergedData.mainLinkApprovals = mergeApprovals(cloudBackupData.data.mainLinkApprovals, mainLinkApprovals);
             } else {
                 mergedData = {
                     users: users,
                     quickLinks: quickLinks,
                     mainLinks: mainLinks,
                     schoolSettings: schoolSettings,
-                    quickLinkApprovals: quickLinkApprovals
+                    quickLinkApprovals: quickLinkApprovals,
+                    mainLinkApprovals: mainLinkApprovals
                 };
             }
 
@@ -6384,7 +6480,8 @@
                         quickLinks: quickLinks,
                         mainLinks: mainLinks,
                         schoolSettings: schoolSettings,
-                        quickLinkApprovals: quickLinkApprovals
+                        quickLinkApprovals: quickLinkApprovals,
+                        mainLinkApprovals: mainLinkApprovals
                     }
                 };
 
@@ -7398,6 +7495,11 @@
                 if (syncMainLinks && backupData.data.mainLinks) {
                     mainLinks = mergeArrayByKey(mainLinks, backupData.data.mainLinks, linkKey);
                     localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
+                    // Also merge main link approvals with main links
+                    if (backupData.data.mainLinkApprovals) {
+                        mainLinkApprovals = mergeApprovals(mainLinkApprovals, backupData.data.mainLinkApprovals);
+                        localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
+                    }
                 }
 
                 if (syncSettings && backupData.data.schoolSettings) {
