@@ -3102,7 +3102,7 @@
 
                 // Show/hide settings based on user role
                 const cloudSyncContainer = document.getElementById('cloudSyncContainer');
-                if (loggedInUser && loggedInUser.role === 'Administrator') {
+                if (loggedInUser && (loggedInUser.isAdmin === true || loggedInUser.role === 'Administrator')) {
                     settingsBtn.classList.remove('hidden');
                     if (cloudSyncContainer) cloudSyncContainer.style.display = '';
                 } else {
@@ -3601,16 +3601,18 @@
         // User Management Functions
         function renderUsersSettings() {
             const container = document.getElementById('usersSettings');
-            container.innerHTML = users.map((user, index) => `
-                <div class="user-setting-item ${user.isAdmin ? 'admin-user' : ''}">
+            container.innerHTML = users.map((user, index) => {
+                const admin = isUserAdmin(user);
+                return `
+                <div class="user-setting-item ${admin ? 'admin-user' : ''}">
                     <div class="item-number">${index + 1}</div>
                     <div>
-                        <label>Username${user.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}</label>
-                        <input type="text" value="${escapeHtml(user.username)}" onchange="updateUser(${index}, 'username', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <label>Username${admin ? '<span class="admin-badge">ADMIN</span>' : ''}</label>
+                        <input type="text" value="${escapeHtml(user.username)}" onchange="updateUser(${index}, 'username', this.value)" ${admin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Display Name</label>
-                        <input type="text" value="${escapeHtml(user.displayName)}" onchange="updateUser(${index}, 'displayName', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <input type="text" value="${escapeHtml(user.displayName)}" onchange="updateUser(${index}, 'displayName', this.value)" ${admin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Email</label>
@@ -3618,29 +3620,28 @@
                     </div>
                     <div>
                         <label>Password</label>
-                        <input type="text" value="${user.isAdmin ? '••••••••••••' : escapeHtml(user.password)}" onchange="updateUser(${index}, 'password', this.value)" ${user.isAdmin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <input type="text" value="${admin ? '••••••••••••' : escapeHtml(user.password)}" onchange="updateUser(${index}, 'password', this.value)" ${admin ? 'readonly style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                     </div>
                     <div>
                         <label>Role</label>
-                        <select onchange="updateUser(${index}, 'role', this.value)" ${user.isAdmin ? 'disabled style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
+                        <select onchange="updateUser(${index}, 'role', this.value)" ${admin ? 'disabled style="background:#e2e8f0;cursor:not-allowed;"' : ''}>
                             <option value="User" ${user.role === 'User' ? 'selected' : ''}>User (View Only)</option>
                             <option value="Administrator" ${user.role === 'Administrator' ? 'selected' : ''}>Administrator (Full Access)</option>
                         </select>
                     </div>
-                    <button class="delete-btn" onclick="deleteUser(${index})" ${user.isAdmin ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>🗑️</button>
-                </div>
-            `).join('');
+                    <button class="delete-btn" onclick="deleteUser(${index})" ${admin ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>🗑️</button>
+                </div>`;
+            }).join('');
         }
 
         function updateUser(index, field, value) {
             // Prevent changing any admin fields
-            if (users[index].isAdmin) {
+            if (isUserAdmin(users[index])) {
                 return;
             }
-            console.log('Updating user:', { index, field, value, before: users[index][field] });
             users[index][field] = value;
             users[index].lastModified = Date.now();
-            console.log('After update:', { username: users[index].username, password: users[index].password });
+            saveUsers();
         }
 
         function addUser() {
@@ -3653,18 +3654,22 @@
                 isAdmin: false,
                 lastModified: Date.now()
             });
+            saveUsers();
             renderUsersSettings();
+            renderQuickLinksApprovalTab();
         }
 
         function deleteUser(index) {
             // Cannot delete admin user
-            if (users[index].isAdmin) {
+            if (isUserAdmin(users[index])) {
                 alert('Cannot delete the administrator account.');
                 return;
             }
             if (users.length > 1) {
                 users.splice(index, 1);
+                saveUsers();
                 renderUsersSettings();
+                renderQuickLinksApprovalTab();
             } else {
                 alert('You must have at least one user.');
             }
@@ -3673,9 +3678,13 @@
         // Quick Links Approval Functions
         let selectedApprovalUser = null;
 
+        function isUserAdmin(u) {
+            return u.isAdmin === true || u.role === 'Administrator';
+        }
+
         function renderQuickLinksApprovalTab() {
             const container = document.getElementById('quickLinksApprovalContent');
-            const nonAdminUsers = users.filter(u => !u.isAdmin);
+            const nonAdminUsers = users.filter(u => !isUserAdmin(u));
 
             if (selectedApprovalUser) {
                 // Show the approval detail view for the selected user
@@ -3763,8 +3772,9 @@
                     container.innerHTML = `
                         <div class="approval-no-users">
                             <span>👥</span>
-                            <p>No users created yet.</p>
-                            <p style="font-size: 0.85rem;">Add users in the "Users" tab to manage their access.</p>
+                            <p>No non-admin users found.</p>
+                            <p style="font-size: 0.85rem;">Add users in the <strong>"Users"</strong> tab to manage their link access here.</p>
+                            <p style="font-size: 0.8rem; margin-top: 0.75rem; color: var(--text-secondary);">If users were lost, try restoring from <strong>Cloud Storage → Version History</strong>.</p>
                         </div>
                     `;
                     return;
@@ -5677,9 +5687,23 @@
 
         // ========== MERGE UTILITY FUNCTIONS ==========
         // Merge users: uses timestamps for conflicts, preserves users unique to each side
+        // Ensure a user object has all required fields with sane defaults
+        function sanitizeUser(user) {
+            return {
+                username: user.username || 'unknown',
+                password: user.password || '',
+                displayName: user.displayName || user.username || 'Unknown',
+                email: user.email || '',
+                role: user.role || 'User',
+                isAdmin: user.isAdmin === true,
+                lastModified: user.lastModified || 0,
+                ...user
+            };
+        }
+
         function mergeUsers(localUsers, cloudUsers) {
-            if (!cloudUsers || !cloudUsers.length) return localUsers;
-            if (!localUsers || !localUsers.length) return cloudUsers;
+            if (!cloudUsers || !cloudUsers.length) return (localUsers || []).map(sanitizeUser);
+            if (!localUsers || !localUsers.length) return cloudUsers.map(sanitizeUser);
 
             const merged = [...localUsers];
 
@@ -5702,7 +5726,7 @@
                     merged.push(cloudUser);
                 }
             }
-            return merged;
+            return merged.map(sanitizeUser);
         }
 
         // Merge arrays of links by name+url key: adds new items from both sides, uses timestamps for conflicts
@@ -5888,7 +5912,21 @@
                 localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
             }
 
+            // If settings modal is open, refresh all tabs to reflect merged data
+            refreshSettingsIfOpen();
+
             return mergedCounts;
+        }
+
+        // Refresh settings modal tabs if the modal is currently open
+        function refreshSettingsIfOpen() {
+            const modal = document.getElementById('settingsModal');
+            if (modal && modal.classList.contains('active')) {
+                renderUsersSettings();
+                renderQuickLinksApprovalTab();
+                renderQuickLinksSettings();
+                renderMainLinksSettings();
+            }
         }
 
         // Apply merge to cloud: merges local data INTO cloud data (local takes priority, cloud-only items preserved)
