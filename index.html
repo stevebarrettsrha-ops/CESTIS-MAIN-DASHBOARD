@@ -3240,40 +3240,9 @@
                     throw new Error('Invalid backup format');
                 }
 
-                // Restore all data from cloud
-                if (backup.data.deletedQuickLinkKeys) {
-                    deletedQuickLinkKeys = backup.data.deletedQuickLinkKeys;
-                    localStorage.setItem('deletedQuickLinkKeys', JSON.stringify(deletedQuickLinkKeys));
-                }
-                if (backup.data.deletedMainLinkKeys) {
-                    deletedMainLinkKeys = backup.data.deletedMainLinkKeys;
-                    localStorage.setItem('deletedMainLinkKeys', JSON.stringify(deletedMainLinkKeys));
-                }
-                if (backup.data.users) {
-                    users = backup.data.users;
-                    localStorage.setItem('dashboardUsers', JSON.stringify(users));
-                    console.log('Auto-sync: Users synced from cloud:', users.length, 'users');
-                }
-                if (backup.data.quickLinks) {
-                    quickLinks = backup.data.quickLinks;
-                    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
-                }
-                if (backup.data.mainLinks) {
-                    mainLinks = backup.data.mainLinks;
-                    localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
-                }
-                if (backup.data.schoolSettings) {
-                    schoolSettings = backup.data.schoolSettings;
-                    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
-                }
-                if (backup.data.quickLinkApprovals) {
-                    quickLinkApprovals = backup.data.quickLinkApprovals;
-                    localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
-                }
-                if (backup.data.mainLinkApprovals) {
-                    mainLinkApprovals = backup.data.mainLinkApprovals;
-                    localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
-                }
+                // Merge cloud data into local (protects existing local data)
+                applyMergeFromCloud(backup);
+                console.log('Auto-sync: Users merged from cloud:', users.length, 'users');
 
                 // Update sync tracking
                 lastSyncTime = new Date();
@@ -4120,9 +4089,14 @@
             event.target.classList.add('active');
             document.getElementById(tabName + 'Tab').classList.add('active');
 
-            // Load Cloud Storage data when tab is activated
+            // Refresh content when specific tabs are activated
             if (tabName === 'cloudStorage') {
                 onCloudStorageTabActivated();
+            } else if (tabName === 'quickLinksApproval') {
+                renderQuickLinksApprovalTab();
+            } else if (tabName === 'users') {
+                renderUsersSettings();
+                render2FAStatus();
             }
         }
 
