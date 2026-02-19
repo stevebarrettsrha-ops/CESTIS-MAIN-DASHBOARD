@@ -3670,6 +3670,7 @@
             }
             console.log('Updating user:', { index, field, value, before: users[index][field] });
             users[index][field] = value;
+            users[index].lastModified = Date.now();
             console.log('After update:', { username: users[index].username, password: users[index].password });
         }
 
@@ -3680,7 +3681,8 @@
                 displayName: 'New User',
                 email: '',
                 role: 'User',
-                isAdmin: false
+                isAdmin: false,
+                lastModified: Date.now()
             });
             renderUsersSettings();
         }
@@ -4131,6 +4133,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     schoolSettings.logo = e.target.result;
+                    schoolSettings.lastModified = Date.now();
                     const preview = document.getElementById('logoPreview');
                     preview.innerHTML = `<img src="${e.target.result}" alt="Logo Preview">`;
                 };
@@ -4140,6 +4143,7 @@
 
         function removeLogo() {
             schoolSettings.logo = null;
+            schoolSettings.lastModified = Date.now();
             document.getElementById('logoPreview').innerHTML = '<span style="font-size: 2rem; color: #94a3b8;">🖼️</span>';
             document.getElementById('logoInput').value = '';
         }
@@ -4165,11 +4169,12 @@
 
         function updateQuickLink(index, field, value) {
             quickLinks[index][field] = value;
+            quickLinks[index].lastModified = Date.now();
         }
 
         function addQuickLink() {
             const randomIcon = quickIcons[Math.floor(Math.random() * quickIcons.length)];
-            quickLinks.push({ name: 'New Link', url: '#', icon: randomIcon });
+            quickLinks.push({ name: 'New Link', url: '#', icon: randomIcon, lastModified: Date.now() });
             renderQuickLinksSettings();
         }
 
@@ -4209,11 +4214,12 @@
 
         function updateMainLink(index, field, value) {
             mainLinks[index][field] = value;
+            mainLinks[index].lastModified = Date.now();
         }
 
         function addMainLink() {
             const randomIcon = mainIcons[Math.floor(Math.random() * mainIcons.length)];
-            mainLinks.push({ name: 'New Resource', url: '#', description: 'Click to open', icon: randomIcon });
+            mainLinks.push({ name: 'New Resource', url: '#', description: 'Click to open', icon: randomIcon, lastModified: Date.now() });
             renderMainLinksSettings();
         }
 
@@ -4237,6 +4243,7 @@
             // Update school settings
             schoolSettings.name = document.getElementById('schoolNameInput').value;
             schoolSettings.tagline = document.getElementById('schoolTaglineInput').value;
+            schoolSettings.lastModified = Date.now();
 
             // Debug: Log users being saved
             console.log('Saving users to localStorage:', users.map(u => ({ username: u.username, password: u.password, isAdmin: u.isAdmin })));
@@ -4960,7 +4967,7 @@
             // Google OAuth Client ID
             CLIENT_ID: '302497466088-0b619cqa9qno2c606k4rqp742lebc5o8.apps.googleusercontent.com',
             // Your Google Drive folder ID from the shared link
-            FOLDER_ID: '11vWe_Nc40TtJ1Hi7PoE7EZ3JrpR-K0Vj',
+            FOLDER_ID: '1DCwR5ugP89_RYBZhcQIDHZW70CUH5WD4',
             // File name for backup
             BACKUP_FILE_NAME: 'CESTIS_MAIN_DASHBOARD_BACKUP.json',
             // API scopes needed - using 'drive' scope to allow access to shared files from any account
@@ -5544,68 +5551,11 @@
                     return false;
                 }
 
-                const response = await fetch(
-                    `https://www.googleapis.com/drive/v3/files/${cloudFileId}?alt=media`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${googleAccessToken}`
-                        }
-                    }
-                );
+                const backup = await downloadCloudBackup();
 
-                if (!response.ok) {
-                    throw new Error('Failed to download backup');
-                }
-
-                const backup = await response.json();
-
-                // Validate backup format
-                if (!backup.version || !backup.data) {
-                    throw new Error('Invalid backup format');
-                }
-
-                // Merge cloud data into local data (protects existing local data)
-                if (backup.data.users) {
-                    users = mergeUsers(users, backup.data.users);
-                    localStorage.setItem('dashboardUsers', JSON.stringify(users));
-                    console.log('Users merged from cloud:', users.length, 'users');
-                }
-
-                // Merge deleted keys from cloud (union with local)
-                if (backup.data.deletedQuickLinkKeys) {
-                    for (const key of backup.data.deletedQuickLinkKeys) {
-                        if (!deletedQuickLinkKeys.includes(key)) deletedQuickLinkKeys.push(key);
-                    }
-                    localStorage.setItem('deletedQuickLinkKeys', JSON.stringify(deletedQuickLinkKeys));
-                }
-                if (backup.data.deletedMainLinkKeys) {
-                    for (const key of backup.data.deletedMainLinkKeys) {
-                        if (!deletedMainLinkKeys.includes(key)) deletedMainLinkKeys.push(key);
-                    }
-                    localStorage.setItem('deletedMainLinkKeys', JSON.stringify(deletedMainLinkKeys));
-                }
-
-                // Also merge other data for consistency
-                if (backup.data.quickLinks) {
-                    quickLinks = mergeArrayByKey(quickLinks, backup.data.quickLinks, linkKey, deletedQuickLinkKeys);
-                    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
-                }
-                if (backup.data.mainLinks) {
-                    mainLinks = mergeArrayByKey(mainLinks, backup.data.mainLinks, linkKey, deletedMainLinkKeys);
-                    localStorage.setItem('mainLinks', JSON.stringify(mainLinks));
-                }
-                if (backup.data.schoolSettings) {
-                    schoolSettings = mergeSettings(schoolSettings, backup.data.schoolSettings);
-                    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
-                }
-                if (backup.data.quickLinkApprovals) {
-                    quickLinkApprovals = mergeApprovals(quickLinkApprovals, backup.data.quickLinkApprovals);
-                    localStorage.setItem('quickLinkApprovals', JSON.stringify(quickLinkApprovals));
-                }
-                if (backup.data.mainLinkApprovals) {
-                    mainLinkApprovals = mergeApprovals(mainLinkApprovals, backup.data.mainLinkApprovals);
-                    localStorage.setItem('mainLinkApprovals', JSON.stringify(mainLinkApprovals));
-                }
+                // Use centralized merge function for consistency
+                applyMergeFromCloud(backup);
+                console.log('Users merged from cloud:', users.length, 'users');
 
                 // Update last sync info
                 lastSyncTime = new Date();
@@ -5752,19 +5702,27 @@
         }
 
         // ========== MERGE UTILITY FUNCTIONS ==========
-        // Merge users: cloud entries update existing (by username), local-only users are preserved
+        // Merge users: uses timestamps for conflicts, preserves users unique to each side
         function mergeUsers(localUsers, cloudUsers) {
             if (!cloudUsers || !cloudUsers.length) return localUsers;
             if (!localUsers || !localUsers.length) return cloudUsers;
 
             const merged = [...localUsers];
-            const localUsernames = new Set(localUsers.map(u => u.username));
 
             for (const cloudUser of cloudUsers) {
                 const localIndex = merged.findIndex(u => u.username === cloudUser.username);
                 if (localIndex >= 0) {
-                    // Update existing user with cloud data, preserving any local-only fields
-                    merged[localIndex] = { ...merged[localIndex], ...cloudUser };
+                    // Both sides have this user - use timestamp to determine which is newer
+                    const localMod = merged[localIndex].lastModified || 0;
+                    const cloudMod = cloudUser.lastModified || 0;
+                    if (cloudMod > localMod) {
+                        // Cloud user is newer - use it (preserve any local-only fields)
+                        merged[localIndex] = { ...merged[localIndex], ...cloudUser };
+                    } else if (localMod > cloudMod) {
+                        // Local user is newer - keep it (but pick up any cloud-only fields)
+                        merged[localIndex] = { ...cloudUser, ...merged[localIndex] };
+                    }
+                    // If equal timestamps (or both 0): keep local as-is (no overwrite)
                 } else {
                     // New user from cloud - add it
                     merged.push(cloudUser);
@@ -5773,7 +5731,7 @@
             return merged;
         }
 
-        // Merge arrays of links by name+url key: adds new cloud items, updates matching items, preserves local-only items
+        // Merge arrays of links by name+url key: adds new items from both sides, uses timestamps for conflicts
         // deletedKeys (optional): array of keys that were explicitly deleted and should not be re-added
         function mergeArrayByKey(localArr, cloudArr, keyFn, deletedKeys) {
             const hasDeleted = deletedKeys && deletedKeys.length;
@@ -5798,8 +5756,17 @@
 
                 const localIndex = merged.findIndex(item => keyFn(item) === key);
                 if (localIndex >= 0) {
-                    // Update existing item with cloud data
-                    merged[localIndex] = { ...merged[localIndex], ...cloudItem };
+                    // Both sides have this item - use timestamp to determine which is newer
+                    const localMod = merged[localIndex].lastModified || 0;
+                    const cloudMod = cloudItem.lastModified || 0;
+                    if (cloudMod > localMod) {
+                        // Cloud item is newer - use it (preserve any local-only fields)
+                        merged[localIndex] = { ...merged[localIndex], ...cloudItem };
+                    } else if (localMod > cloudMod) {
+                        // Local item is newer - keep it (but pick up any cloud-only fields)
+                        merged[localIndex] = { ...cloudItem, ...merged[localIndex] };
+                    }
+                    // If equal timestamps (or both 0): keep local as-is (no overwrite)
                 } else {
                     // New item from cloud - add it
                     merged.push(cloudItem);
@@ -5813,35 +5780,55 @@
             return (item.name || '').toLowerCase() + '||' + (item.url || '').toLowerCase();
         }
 
-        // Deep merge settings objects: cloud values fill in, but local values are preserved for keys that exist locally
-        function mergeSettings(localSettings, cloudSettings) {
-            if (!cloudSettings) return localSettings;
-            if (!localSettings) return cloudSettings;
+        // Merge settings objects using timestamps: newer settings take priority
+        function mergeSettings(settingsA, settingsB) {
+            if (!settingsB) return settingsA;
+            if (!settingsA) return settingsB;
 
-            const merged = { ...cloudSettings, ...localSettings };
-            // For nested objects, merge them too
-            for (const key in cloudSettings) {
-                if (cloudSettings[key] && typeof cloudSettings[key] === 'object' && !Array.isArray(cloudSettings[key])) {
-                    if (localSettings[key] && typeof localSettings[key] === 'object') {
-                        merged[key] = { ...cloudSettings[key], ...localSettings[key] };
+            const modA = settingsA.lastModified || 0;
+            const modB = settingsB.lastModified || 0;
+
+            // Determine priority: newer settings win, equal keeps A (first param)
+            let base, priority;
+            if (modB > modA) {
+                base = settingsA;
+                priority = settingsB;
+            } else {
+                base = settingsB;
+                priority = settingsA;
+            }
+
+            const merged = { ...base, ...priority };
+            // For nested objects, deep merge them too
+            for (const key in base) {
+                if (base[key] && typeof base[key] === 'object' && !Array.isArray(base[key])) {
+                    if (priority[key] && typeof priority[key] === 'object') {
+                        merged[key] = { ...base[key], ...priority[key] };
                     }
                 }
             }
             return merged;
         }
 
-        // Merge quick link approvals: deep merge per-user approval maps
-        function mergeApprovals(localApprovals, cloudApprovals) {
-            if (!cloudApprovals) return localApprovals;
-            if (!localApprovals) return cloudApprovals;
+        // Merge approval maps: symmetric deep merge, second argument wins for conflicts
+        // In applyMergeFromCloud: mergeApprovals(local, cloud) → cloud changes come through
+        // In applyMergeToCloud: mergeApprovals(cloud, local) → local changes take priority
+        function mergeApprovals(approvalsA, approvalsB) {
+            if (!approvalsB) return approvalsA;
+            if (!approvalsA) return approvalsB;
 
-            const merged = { ...localApprovals };
-            for (const username in cloudApprovals) {
-                if (merged[username]) {
-                    // Merge approval entries: local values take precedence
-                    merged[username] = { ...cloudApprovals[username], ...merged[username] };
+            const allUsernames = new Set([...Object.keys(approvalsA), ...Object.keys(approvalsB)]);
+            const merged = {};
+
+            for (const username of allUsernames) {
+                const a = approvalsA[username];
+                const b = approvalsB[username];
+
+                if (a && b) {
+                    // Both sides have entries for this user - B (second arg) wins for conflicts
+                    merged[username] = { ...a, ...b };
                 } else {
-                    merged[username] = { ...cloudApprovals[username] };
+                    merged[username] = { ...(a || b) };
                 }
             }
             return merged;
